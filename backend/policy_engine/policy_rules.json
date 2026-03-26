@@ -1,0 +1,44 @@
+[
+  {
+    "name": "block_guest_exec",
+    "rule": {
+      "action": "exec_process",
+      "allow_roles": ["admin", "developer"],
+      "deny_roles": ["guest"]
+    }
+  },
+  {
+    "name": "block_guest_write",
+    "rule": {
+      "action": "file_write",
+      "allow_roles": ["admin", "developer"],
+      "deny_roles": ["guest"]
+    }
+  },
+  {
+    "name": "block_guest_delete",
+    "rule": {
+      "action": "file_delete",
+      "allow_roles": ["admin"],
+      "deny_roles": ["guest", "developer"]
+    }
+  },
+  {
+    "name": "restrict_system_dirs",
+    "rule": {
+      "action": "system_dir_access",
+      "allow_roles": ["admin"],
+      "deny_roles": ["guest", "developer"]
+    }
+  },
+  {
+    "name": "high_risk_exec_block",
+    "rule": {
+      "action": "exec_process",
+      "allow_roles": ["admin", "developer"],
+      "conditions": {
+        "max_risk_score": 60
+      }
+    }
+  }
+]
