@@ -1,6 +1,6 @@
-# 🎨 SecureGate — Frontend & Dashboard
+# 🎨 SysCallGuardian — Frontend & Dashboard
 
-> We built the complete UI layer for SecureGate — a Secure System Call Gateway with Role-Based Access Control and Real-Time Monitoring. This covers everything from the login page to the live dashboard, charts, log viewer, threat panel, and all interactivity.
+> We built the complete UI layer for SysCallGuardian — a Secure System Call Gateway with Role-Based Access Control and Real-Time Monitoring. This covers everything from the login page to the live dashboard, charts, log viewer, threat panel, and all interactivity.
 
 ---
 
@@ -35,10 +35,10 @@
 
 ## 🔍 What We Built
 
-The entire frontend for SecureGate is a **single-file SPA** (`syscall-gateway-interactive.html`) — no frameworks, no build tools, no bundler. Pure HTML5, CSS3, and Vanilla JavaScript ES6+.
+The entire frontend for SysCallGuardian is a **single-file SPA** (`index.html`) — no frameworks, no build tools, no bundler. Pure HTML5, CSS3, and Vanilla JavaScript ES6+.
 
 It consists of:
-- A **login page** with role-selector (Admin / Developer / Guest), credential validation, and session state
+- A **login page** with role-selector (Admin / Developer / Guest), credential validation, and session state. Public registration is disabled and managed via the dashboard.
 - A **full dashboard shell** with sticky navbar, sidebar navigation, and 6 inner pages
 - **Real-time charts** using Chart.js (syscall activity line chart + call distribution donut)
 - A **live activity feed** that streams simulated syscall events with pause/resume
@@ -78,7 +78,7 @@ python3 -m http.server 8080
 # → visit http://localhost:8080/syscall-gateway-interactive.html
 ```
 
-**Demo login:** Any username + any password of 4+ characters. The frontend currently runs on mock data — no backend needed.
+**Demo login:** Refer to root README for Tejax (Admin), Vancika (Dev), or GuestA/B credentials. The frontend is fully integrated with the Flask backend.
 
 ---
 
@@ -87,7 +87,7 @@ python3 -m http.server 8080
 Everything lives in one file. Here's the internal layout:
 
 ```
-syscall-gateway-interactive.html
+index.html
 │
 ├── <head>
 │   ├── Google Fonts  (DM Sans + JetBrains Mono)
@@ -214,7 +214,7 @@ All visual decisions are defined once as CSS custom properties in `:root` and re
 
 ### 1. Login Page
 
-**`#login-view`** — full-viewport centered flex layout.
+**`#login-view`** — full-viewport centered flex layout. Securely restricted to existing users; public signup is disabled.
 
 ```
 ┌─────────────────────────────────┐
@@ -233,7 +233,7 @@ All visual decisions are defined once as CSS custom properties in `:root` and re
 │  │  [  Access Gateway →  ]   │  │
 │  │  ⚠ error message (hidden) │  │
 │  │  ─── bcrypt · SHA-256 ─── │  │
-│  │  🔒 Session expires 30min │  │
+│  │  🔒 Session expires 4 hours│  │
 │  │  [RBAC][bcrypt][SHA-256]   │  │
 │  └───────────────────────────┘  │
 │  OS Sem 4 · Akhil·Tejas·Vanshika │
@@ -319,6 +319,7 @@ liveInterval = setInterval(() => {
 - Colored avatar (`green` = Admin, `blue` = Dev, `amber` = flagged Dev, `red` = critical Guest)
 - Username + role label
 - 2-stat mini grid: Syscalls count + Blocked count / Risk score
+- **Internal Registration**: Admins and Developers can add new users via a toggleable "Add User" form card.
 
 Clicking a card → `openUserModal(name, role, status, calls, risk)`:
 - Header with avatar, name, role
@@ -602,7 +603,7 @@ Sidebar
 ├── Policies ────────────────────────────── goPage('policies')
 ├── Threat Detection ────────────────────── goPage('threats')
 ├── Audit Logs ──────────────────────────── goPage('logs')
-└── Logout ──────────────────────────────── showView('login') + clears feed interval
+└── Logout ──────────────────────────────── showView('login') + clears session token
 
 Overview Page
 ├── Stat cards (Total / Allowed / Blocked) ── goPage('logs')
@@ -646,7 +647,8 @@ Audit Logs Page
 - **Zero-dependency SPA** — one HTML file, one CDN script. No npm, no webpack, no React
 - **Client-side routing** — 6 navigable pages via CSS class toggling, no URL changes needed
 - **Role-aware login** — 3 selectable roles, sets session state displayed throughout the app
-- **Real-time live feed** — auto-updating syscall stream via `setInterval`, with pause/resume control
+- **Real-time live feed** — auto-updating syscall stream via the Flask backend, with pause/resume control
+- **CRT Terminal Aesthetic** — high-contrast dashboard with scanline effect and status-driven terminal colors (Green/Red)
 - **Animated new rows** — each new feed entry slides in with a `slideIn` CSS keyframe
 - **Interactive charts** — Chart.js line chart (activity timeline) + donut chart (distribution)
 - **Full filtering system** — 4 independent filters + free-text search, all working simultaneously
