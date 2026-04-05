@@ -28,18 +28,29 @@ def safe_exec_process(command: str) -> dict:
 
     try:
         tokens = shlex.split(command)
+        
+        # Windows builtin handling: dir, echo, type, etc.
+        if os.name == 'nt' and tokens[0].lower() in {'dir', 'echo', 'type', 'cls', 'ver', 'copy', 'move', 'del', 'attrib'}:
+            tokens = ["cmd.exe", "/c"] + tokens
+
+        import tempfile
+        tmp_dir = tempfile.gettempdir()
+        
+        # Cross-platform environment handling
+        proc_env = { "HOME": tmp_dir }
+        if os.name == 'nt': # Windows
+            proc_env["PATH"] = os.environ.get("PATH", "C:\\Windows\\system32;C:\\Windows")
+        else: # Linux/Unix
+            proc_env["PATH"] = "/usr/bin:/bin"
 
         result = subprocess.run(
             tokens,
             capture_output=True,
             text=True,
             timeout=EXEC_TIMEOUT_S,
-            shell=False,          # CRITICAL: never shell=True
-            cwd="/tmp",           # run in /tmp, not project root
-            env={                 # minimal environment — no secrets leaked
-                "PATH": "/usr/bin:/bin",
-                "HOME": "/tmp",
-            }
+            shell=False,
+            cwd=tmp_dir,
+            env=proc_env
         )
 
         output = result.stdout + result.stderr

@@ -15,6 +15,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
             username      TEXT UNIQUE NOT NULL,
+            email         TEXT,
             password_hash TEXT NOT NULL,
             role          TEXT NOT NULL DEFAULT 'guest'
                             CHECK(role IN ('admin','developer','guest')),
@@ -55,36 +56,44 @@ def init_db():
             expires_at TIMESTAMP NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS otps (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            email      TEXT NOT NULL,
+            otp_code   TEXT NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     """)
 
     # Seed roles
     cursor.executemany(
-        "INSERT OR IGNORE INTO roles (role, permissions) VALUES (?, ?)",
+        "INSERT OR REPLACE INTO roles (role, permissions) VALUES (?, ?)",
         [
             ("admin",
              '["file_read","file_write","file_delete","dir_list","exec_process",'
-             '"system_dir_access","view_logs","manage_policies","view_dashboard"]'),
+             '"system_dir_access","view_logs","manage_policies","view_dashboard","system_info"]'),
             ("developer",
-             '["file_read","file_write","dir_list","exec_process","view_logs","view_dashboard"]'),
+             '["file_read","file_write","dir_list","exec_process","view_logs","view_dashboard","system_info"]'),
             ("guest",
-             '["file_read","dir_list"]'),
+             '["file_read","dir_list","system_info"]'),
         ]
     )
 
     # Seed policies
     cursor.executemany(
-        "INSERT OR IGNORE INTO policies (name, rule_json) VALUES (?, ?)",
+        "INSERT OR REPLACE INTO policies (name, rule_json, is_active) VALUES (?, ?, ?)",
         [
             ("block_guest_exec",
-             '{"action":"exec_process","allow_roles":["admin","developer"],"deny_roles":["guest"]}'),
+             '{"action":"exec_process","allow_roles":["admin","developer"],"deny_roles":["guest"]}', 1),
             ("block_guest_write",
-             '{"action":"file_write","allow_roles":["admin","developer"],"deny_roles":["guest"]}'),
+             '{"action":"file_write","allow_roles":["admin","developer"],"deny_roles":["guest"]}', 1),
             ("block_guest_delete",
-             '{"action":"file_delete","allow_roles":["admin"],"deny_roles":["guest","developer"]}'),
+             '{"action":"file_delete","allow_roles":["admin"],"deny_roles":["guest","developer"]}', 1),
             ("restrict_system_dirs",
-             '{"action":"system_dir_access","allow_roles":["admin"],"deny_roles":["guest","developer"]}'),
+             '{"action":"system_dir_access","allow_roles":["admin"],"deny_roles":["guest","developer"]}', 1),
             ("high_risk_exec_block",
-             '{"action":"exec_process","allow_roles":["admin","developer"],"conditions":{"max_risk_score":60}}'),
+             '{"action":"exec_process","allow_roles":["admin","developer"],"conditions":{"max_risk_score":60}}', 1),
         ]
     )
 

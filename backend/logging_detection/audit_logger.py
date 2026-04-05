@@ -10,6 +10,7 @@ Every log entry contains:
 
 import hashlib
 import json
+import os
 from datetime import datetime, timezone
 from database.db import get_connection
 
@@ -52,6 +53,10 @@ def log_syscall(user_id: int, call_type: str, target_path: str,
         reason      : why it was blocked/flagged (None if allowed)
         risk_delta  : risk score increment for this event
     """
+    import os
+    if call_type in {"file_read", "file_write", "file_delete", "dir_list", "system_dir_access"}:
+        target_path = os.path.normpath(target_path) if target_path else ""
+
     conn = get_connection()
     try:
         timestamp = datetime.now(timezone.utc).isoformat()

@@ -1,463 +1,308 @@
-# 📡 API Documentation
-**Project:** Secure System Call Gateway with RBAC & Real-Time Monitoring
+# SysCallGuardian — Secure System Call Gateway with RBAC & Real-Time Monitoring
+
+A security layer that sits between users and the operating system. Every system call — read file, write file, execute process — passes through authentication, role-based access control, and dynamic policy evaluation before being executed. Every action is logged with SHA-256 hash chaining for tamper detection.
 
 ---
 
-## 🔐 Authentication APIs
+## Architecture
 
-### 1. Login
-**POST** `/api/auth/login`
-
-**Request Body:**
-```json
-{
-  "username": "tejas",
-  "password": "password123"
-}
 ```
-
-**Response:**
-```json
-{
-  "message": "Login successful",
-  "token": "jwt_token_here",
-  "role": "admin"
-}
-```
-
----
-
-### 2. Logout
-**POST** `/api/auth/logout`
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response:**
-```json
-{
-  "message": "Logged out successfully"
-}
+[Browser / Client]
+       │
+       ▼
+[Auth Gateway]          ← bcrypt + JWT session management
+       │
+       ▼
+[RBAC Middleware]       ← role-based permission check (Admin / Developer / Guest)
+       │
+       ▼
+[Policy Engine]         ← dynamic JSON rules, hot-reloadable at runtime
+       │
+       ▼
+[Syscall Wrapper]       ← input validation, path sanitization, subprocess guard
+       │         │
+       ▼         ▼
+  [OS/Kernel]  [Audit Logger]    ← SHA-256 hash chaining on every entry
+                    │
+               [Threat Engine]   ← 5 detection rules, risk scoring 0–100
+                    │
+               [Dashboard UI]    ← Chart.js, live feed, policy editor
 ```
 
 ---
 
-## 👤 User & Role APIs
+## Tech Stack
 
-### 3. Get Current User
-**GET** `/api/user/me`
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.11, Flask 3.0, SQLite |
+| Auth | bcrypt, PyJWT |
+| Frontend | HTML5, Vanilla JS, Chart.js v4 |
+| Testing | pytest, pytest-cov |
+| Config | python-dotenv |
 
-**Headers:**
+---
+
+## Team & Roles
+
+| Member | Responsibility |
+|---|---|
+| **Tejas** | Authentication, RBAC, Policy Engine, Performance Analysis |
+| **Vanshika** | Syscall Wrappers, Audit Logger, Threat Detection, Risk Scoring |
+| **Akhil** | Frontend Dashboard, UI Integration, Chart.js Visualizations |
+
+---
+
+## Project Structure
+
 ```
-Authorization: Bearer <token>
-```
-
-**Response:**
-```json
-{
-  "username": "tejas",
-  "role": "admin",
-  "is_flagged": false,
-  "risk_score": 0.0
-}
+secure-syscall-gateway/
+├── backend/
+│   ├── app.py                    # Flask entry point
+│   ├── config.py                 # Environment config
+│   ├── database/
+│   │   ├── db.py                 # SQLite connection handler
+│   │   └── models.py             # Schema creation + seeding
+│   ├── auth_rbac/
+│   │   ├── auth_controller.py    # Register, login, logout
+│   │   ├── password_utils.py     # bcrypt hashing
+│   │   ├── session_manager.py    # JWT generation + validation
+│   │   ├── roles.py              # Permission map + access decisions
+│   │   └── permission_middleware.py  # Flask decorators
+│   ├── policy_engine/
+│   │   ├── policy_loader.py      # DB CRUD + file import
+│   │   ├── policy_evaluator.py   # Rule evaluation engine
+│   │   └── policy_rules.json     # Default rules
+│   ├── syscall_layer/
+│   │   ├── validation.py         # Path + command sanitization
+│   │   ├── file_operations.py    # read, write, delete, dir_list
+│   │   ├── process_operations.py # Safe subprocess execution
+│   │   └── syscall_controller.py # Central orchestrator
+│   ├── logging_detection/
+│   │   ├── audit_logger.py       # SHA-256 hash chain logger
+│   │   ├── log_integrity.py      # Chain verification
+│   │   ├── threat_detection.py   # 5-rule detection engine
+│   │   └── risk_scoring.py       # Risk delta computation
+│   ├── performance/
+│   │   └── overhead_analysis.py  # Benchmark: direct vs mediated calls
+│   └── routes/
+│       ├── auth_routes.py        # Auth + user + policy endpoints
+│       ├── syscall_routes.py     # Syscall execution endpoints
+│       └── log_routes.py         # Logs + integrity + dashboard endpoints
+├── frontend/
+│   ├── index.html                # Single-page application
+│   ├── js/
+│   │   ├── api.js                # Central API layer + token management
+│   │   ├── helpers.js            # Formatters, risk classifiers, debounce
+│   │   ├── policy_editor.js      # Policy create/edit modal
+│   │   └── user_management.js    # User detail modal + actions
+│   └── css/
+│       └── theme.css             # CSS variables + component styles
+├── policies/
+│   └── access_policy.json        # Default policy rules (imported at startup)
+├── tests/
+│   ├── conftest.py               # Shared fixtures + in-memory DB setup
+│   ├── test_auth.py              # 28 tests — auth system
+│   ├── test_policy.py            # 32 tests — RBAC + policy engine
+│   ├── test_syscalls.py          # 42 tests — syscall layer
+│   └── test_logging.py           # 35 tests — logging + threat detection
+├── docs/
+│   ├── api_documentation.md      # Full API reference
+│   ├── architecture_diagram.png  # System architecture
+│   └── flow_diagram.png          # Request flow
+├── performance/
+│   └── benchmark_results.json    # Generated by overhead_analysis.py
+├── README.md
+├── requirements.txt
+└── .env
 ```
 
 ---
 
-## 🛡️ Policy APIs
+## How to Run
 
-### 4. Get All Policies
-**GET** `/api/policies`
+### Prerequisites
+- Python 3.11+
+- pip
 
-**Headers:**
-```
-Authorization: Bearer <token>
-```
+### Setup
 
-> 🔒 Requires `admin` role.
+```bash
+# 1. Clone the repository
+git clone <repo-url>
+cd secure-syscall-gateway
 
-**Response:**
-```json
-[
-  {
-    "id": 1,
-    "name": "block_guest_exec",
-    "rule_json": {
-      "action": "exec_process",
-      "allow_roles": ["admin", "developer"]
-    },
-    "is_active": true
-  }
-]
-```
+# 2. Install dependencies
+pip install -r requirements.txt
 
----
+# 3. Create .env file
+cp .env.example .env
+# Edit .env if needed — defaults work for local development
 
-### 5. Create Policy
-**POST** `/api/policies`
+# 4. Start the backend
+cd backend
+python app.py
+# Server starts on http://localhost:5000
+# DB is created and seeded automatically on first run
 
-**Headers:**
-```
-Authorization: Bearer <token>
+# 5. Open the frontend
+# Open frontend/index.html in any browser
+# Or serve it: python -m http.server 8080 (from frontend/)
 ```
 
-> 🔒 Requires `admin` role.
+### Default Demo Credentials
 
-**Request Body:**
-```json
-{
-  "name": "block_guest_write",
-  "rule_json": {
-    "action": "file_write",
-    "allow_roles": ["admin", "developer"]
-  },
-  "is_active": true
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Policy created successfully",
-  "id": 2
-}
-```
-
----
-
-### 6. Update Policy
-**PUT** `/api/policies/:id`
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-> 🔒 Requires `admin` role.
-
-**Request Body:**
-```json
-{
-  "rule_json": {
-    "action": "file_write",
-    "allow_roles": ["admin"]
-  },
-  "is_active": true
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Policy updated successfully"
-}
-```
-
----
-
-## ⚙️ System Call APIs
-
-> 🔒 All syscall routes require `Authorization: Bearer <token>` header.
-> Permissions enforced by RBAC middleware based on role.
-
-### 7. Read File
-**POST** `/api/syscall/read`
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "file_path": "test.txt"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "allowed",
-  "content": "File content here"
-}
-```
-
----
-
-### 8. Write File
-**POST** `/api/syscall/write`
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "file_path": "test.txt",
-  "data": "Hello World"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "allowed",
-  "message": "Write successful"
-}
-```
-
----
-
-### 9. Delete File
-**POST** `/api/syscall/delete`
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "file_path": "test.txt"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "blocked",
-  "reason": "Permission denied"
-}
-```
-
----
-
-### 10. Execute Process
-**POST** `/api/syscall/execute`
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "command": "ls"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "allowed",
-  "output": "file1.txt file2.txt"
-}
-```
-
----
-
-## 📜 Logging APIs
-
-### 11. Get Logs
-**GET** `/api/logs`
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Query Params (Optional):**
-
-| Param | Type | Description |
+| Role | Username | Password |
 |---|---|---|
-| `user` | string | Filter by username |
-| `status` | string | `allowed` / `blocked` / `flagged` |
-| `call_type` | string | `file_read` / `file_write` / `exec_process` / `file_delete` |
-| `date` | string | Date filter e.g. `2026-03-25` |
-| `from` | string | Start datetime e.g. `2026-03-25T00:00:00` |
-| `to` | string | End datetime e.g. `2026-03-25T23:59:59` |
-| `page` | integer | Page number for pagination (default: 1) |
+| Admin | admin | AdminPass1 |
+| Developer | dev | DevPass1 |
+| Guest | guest | GuestPass1 |
 
-**Response:**
-```json
-{
-  "page": 1,
-  "total": 120,
-  "logs": [
-    {
-      "id": 42,
-      "user": "tejas",
-      "call_type": "file_read",
-      "target_path": "test.txt",
-      "status": "allowed",
-      "reason": null,
-      "risk_delta": 0.0,
-      "timestamp": "2026-03-25T10:00:00"
-    }
-  ]
-}
+Register these users on first run:
+```bash
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"AdminPass1","role":"admin"}'
+
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"dev","password":"DevPass1","role":"developer"}'
+
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"guest","password":"GuestPass1","role":"guest"}'
 ```
 
 ---
 
-### 12. Verify All Log Integrity
-**GET** `/api/logs/verify`
+## Running Tests
 
-**Headers:**
-```
-Authorization: Bearer <token>
-```
+```bash
+# Run full test suite
+pytest tests/ -v --tb=short
 
-> 🔒 Requires `admin` role. Verifies the full SHA256 hash chain across all logs.
+# Run with coverage report
+pytest tests/ --cov=backend --cov-report=term-missing
 
-**Response:**
-```json
-{
-  "status": "valid",
-  "message": "Logs are not tampered"
-}
+# Run individual test files
+pytest tests/test_auth.py     -v   # Authentication system
+pytest tests/test_policy.py   -v   # RBAC + Policy Engine
+pytest tests/test_syscalls.py -v   # Syscall Layer
+pytest tests/test_logging.py  -v   # Logging + Threat Detection
 ```
 
 ---
 
-### 13. Verify Single Log Entry
-**GET** `/api/logs/verify/:id`
+## Running the Performance Benchmark
 
-**Headers:**
-```
-Authorization: Bearer <token>
+```bash
+cd backend
+python -m performance.overhead_analysis
 ```
 
-> Verifies the SHA256 hash of a single log entry and checks it against the chain.
+Outputs a comparison table:
 
-**Response:**
-```json
-{
-  "log_id": 42,
-  "valid": true,
-  "tampered": false
-}
-```
+| Benchmark | Mean | Overhead |
+|---|---|---|
+| Direct file read (no wrapper) | ~0.02ms | baseline |
+| RBAC permission check | ~0.05ms | +0.03ms |
+| Policy engine evaluation | ~0.08ms | +0.06ms |
+| JWT session validation | ~0.4ms | +0.38ms |
+| Full mediation stack + syscall | ~0.9ms | +0.88ms |
+
+Full results saved to `performance/benchmark_results.json`.
 
 ---
 
-## 🚨 Threat Detection APIs
+## Key Features
 
-### 14. Get Suspicious Activities
-**GET** `/api/threats`
+### Authentication
+- bcrypt password hashing (auto-salted, work factor 12)
+- JWT tokens with unique `jti` to prevent replay attacks
+- Session stored in DB — logout immediately invalidates token
+- Failed login attempts increment risk score
 
-**Headers:**
-```
-Authorization: Bearer <token>
-```
+### RBAC
+| Permission | Admin | Developer | Guest |
+|---|---|---|---|
+| file_read | ✅ | ✅ | ✅ |
+| file_write | ✅ | ✅ | ❌ |
+| file_delete | ✅ | ❌ | ❌ |
+| dir_list | ✅ | ✅ | ✅ |
+| exec_process | ✅ | ✅ | ❌ |
+| system_dir_access | ✅ | ❌ | ❌ |
+| manage_policies | ✅ | ❌ | ❌ |
+| view_logs | ✅ | ✅ | ❌ |
 
-> 🔒 Requires `admin` role.
+### Policy Engine
+- Rules stored in DB, evaluated at runtime
+- Supports: `allow_roles`, `deny_roles`, `max_risk_score`, `time_range` conditions
+- Hot-reloadable — changes take effect immediately, no server restart
+- Import rules from `policies/access_policy.json`
 
-**Response:**
-```json
-[
-  {
-    "user": "guest",
-    "risk_score": 85,
-    "reason": "Multiple failed attempts"
-  }
-]
-```
+### Syscall Protection
+- Path traversal blocked (`../` detection)
+- System paths blocklisted (`/etc/passwd`, `/proc`, `/sys/kernel`, etc.)
+- Command whitelist for exec_process
+- `shell=False` on all subprocess calls — injection structurally impossible
+- Sandbox root for file operations
 
----
+### Log Integrity
+- SHA-256 hash of each entry's data stored with the entry
+- Previous entry's hash stored as `prev_hash` (chain)
+- `GET /api/logs/verify` walks the full chain and detects any tampering or deletion
 
-## 📊 Dashboard APIs
-
-### 15. System Statistics
-**GET** `/api/dashboard/stats`
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response:**
-```json
-{
-  "total_calls": 120,
-  "allowed": 90,
-  "blocked": 30,
-  "flagged": 5,
-  "suspicious_users": 3,
-  "top_users": [
-    { "username": "tejas", "call_count": 55 },
-    { "username": "vanshika", "call_count": 40 }
-  ]
-}
-```
+### Threat Detection
+| Rule | Trigger | Action |
+|---|---|---|
+| R2 — Rapid flood | 20+ same calls in 60s | Flag user |
+| R3 — Exec violations | 3+ exec blocks in 5 min | Flag user |
+| R4 — System path probe | Access to /sys /proc /boot | Flag user |
+| R5 — High risk score | risk_score ≥ 70 | Flag user |
 
 ---
 
-### 16. Activity Over Time
-**GET** `/api/dashboard/activity`
+## API Overview
 
-**Headers:**
-```
-Authorization: Bearer <token>
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /api/auth/login | Login + get JWT |
+| POST | /api/auth/logout | Invalidate session |
+| GET | /api/user/me | Current user info |
+| GET | /api/users | All users with stats (admin) |
+| PUT | /api/users/:id/role | Change user role (admin) |
+| POST | /api/users/:id/revoke | Revoke session (admin) |
+| POST | /api/users/:id/unflag | Clear flag + risk (admin) |
+| GET | /api/policies | All policies |
+| POST | /api/policies | Create policy (admin) |
+| PUT | /api/policies/:id | Update/disable policy (admin) |
+| POST | /api/syscall/read | Read file |
+| POST | /api/syscall/write | Write file |
+| POST | /api/syscall/delete | Delete file |
+| POST | /api/syscall/execute | Execute process |
+| GET | /api/logs | Paginated audit logs |
+| GET | /api/logs/verify | Full chain verification |
+| GET | /api/logs/verify/:id | Single entry verification |
+| GET | /api/threats | Flagged users |
+| GET | /api/dashboard/stats | Syscall statistics |
+| GET | /api/dashboard/activity | Hourly timeline |
 
-**Response:**
-```json
-[
-  {
-    "time": "10:00",
-    "allowed": 12,
-    "blocked": 3,
-    "calls": 15
-  },
-  {
-    "time": "11:00",
-    "allowed": 18,
-    "blocked": 2,
-    "calls": 20
-  }
-]
-```
-
----
-
-## 🔒 Security Notes
-
-- All protected routes require JWT Authentication
-- Role-Based Access Control (RBAC) enforced at middleware level
-- Policies dynamically loaded from `access_policy.json` and synced to DB
-- All system calls are:
-  - Logged with SHA256 hash chaining
-  - Validated and path-sanitized
-  - Checked against RBAC permissions and active policies
-- Risk score updated on every flagged or blocked syscall attempt
+Full documentation: `docs/api_documentation.md`
 
 ---
 
-## 📌 Status Codes
+## OS Concepts Demonstrated
 
-| Code | Meaning               |
-| ---- | --------------------- |
-| 200  | Success               |
-| 401  | Unauthorized          |
-| 403  | Forbidden             |
-| 404  | Not Found             |
-| 500  | Internal Server Error |
+This project demonstrates the following Semester 4 OS concepts:
+
+- **System Call Interface** — mediation layer between user space and kernel
+- **Access Control** — RBAC implemented as a middleware security layer
+- **Process Management** — safe subprocess execution with timeout and resource limits
+- **File System Security** — path sanitization, sandbox isolation
+- **Audit Logging** — tamper-evident log chain using cryptographic hashing
+- **Scheduling & Performance** — overhead measurement of mediation vs direct calls
+- **Inter-Process Communication** — REST API as the IPC mechanism between frontend and backend
 
 ---
 
-## 🧠 Summary
-
-This API layer acts as a secure mediation interface between users and OS system calls by integrating:
-- Authentication (JWT + bcrypt)
-- RBAC (role-based permission enforcement)
-- Policy Enforcement (dynamic JSON rules)
-- Secure Logging (SHA256 hash chain, paginated, filterable)
-- Threat Detection (risk scoring, suspicious user tracking)
+*SysCallGuardian — OS Semester 4 Project · Akhil · Tejas · Vanshika*

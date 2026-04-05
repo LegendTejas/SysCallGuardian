@@ -9,7 +9,7 @@ from auth_rbac.session_manager import generate_token, store_session, delete_sess
 from config import RISK_INCREMENT_PER_FAIL, MAX_RISK_SCORE, MAX_FAILED_LOGINS_BEFORE_FLAG
 
 
-def register_user(username: str, password: str, role: str = "guest") -> dict:
+def register_user(username: str, password: str, role: str = "guest", email: str = "") -> dict:
     """
     Register a new user.
     Returns: { success, message } or { success: False, error }
@@ -24,8 +24,8 @@ def register_user(username: str, password: str, role: str = "guest") -> dict:
     conn = get_connection()
     try:
         conn.execute(
-            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-            (username, hash_password(password), role)
+            "INSERT INTO users (username, password_hash, role, email) VALUES (?, ?, ?, ?)",
+            (username, hash_password(password), role, email)
         )
         conn.commit()
         return {"success": True, "message": f"User '{username}' registered with role '{role}'."}
@@ -47,7 +47,7 @@ def login_user(username: str, password: str) -> dict:
     conn = get_connection()
     try:
         row = conn.execute(
-            "SELECT * FROM users WHERE username = ?", (username,)
+            "SELECT * FROM users WHERE LOWER(username) = ? OR LOWER(email) = ?", (username.lower(), username.lower())
         ).fetchone()
 
         if not row:

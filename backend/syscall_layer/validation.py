@@ -8,10 +8,13 @@ import re
 import shlex
 
 # Directories that are always blocked regardless of role
+# We normalize these on startup for the current OS
 BLOCKED_PATHS = [
-    "/etc/passwd", "/etc/shadow", "/etc/sudoers",
-    "/proc", "/sys/kernel", "/dev",
-    "/boot", "/root",
+    os.path.normpath(p) for p in [
+        "/etc/passwd", "/etc/shadow", "/etc/sudoers",
+        "/proc", "/sys/kernel", "/dev",
+        "/boot", "/root",
+    ]
 ]
 
 # Only these commands are whitelisted for exec_process
@@ -19,6 +22,8 @@ ALLOWED_COMMANDS = {
     "ls", "pwd", "whoami", "echo", "cat", "head", "tail",
     "python3", "python", "node", "java", "grep", "find",
     "mkdir", "touch", "cp", "mv", "wc", "sort", "uniq",
+    "dir", "type", "cls", "ver", "copy", "move", "del", "attrib",
+    "hostname", "ipconfig", "netstat",
 }
 
 # Blocked command patterns (even if base command is allowed)
@@ -41,7 +46,7 @@ def validate_file_path(path: str) -> dict:
     if not path or not isinstance(path, str):
         return {"valid": False, "reason": "Path must be a non-empty string.", "sanitized_path": ""}
 
-    # Normalize and resolve the path (removes ../ traversal)
+    # Normalize the path (removes ../ traversal, converts / to \ on Windows)
     sanitized = os.path.normpath(path)
 
     # Block absolute system paths
@@ -53,8 +58,9 @@ def validate_file_path(path: str) -> dict:
                 "sanitized_path": sanitized,
             }
 
-    # Block path traversal attempts
-    if ".." in path:
+    # Block path traversal attempts (after normalization)
+    parts = sanitized.split(os.sep)
+    if ".." in parts or sanitized.startswith(".."):
         return {
             "valid": False,
             "reason": "Path traversal (../) is not permitted.",
@@ -66,7 +72,7 @@ def validate_file_path(path: str) -> dict:
         return {
             "valid": False,
             "reason": "Null bytes in path are not allowed.",
-            "sanitized_path": "",
+            "sanitized_path": sanitized,
         }
 
     return {"valid": True, "reason": "", "sanitized_path": sanitized}

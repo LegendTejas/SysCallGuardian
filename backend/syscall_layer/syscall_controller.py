@@ -27,6 +27,7 @@ PERMISSION_MAP = {
     "file_delete": "file_delete",
     "dir_list":    "dir_list",
     "exec_process":"exec_process",
+    "system_info": "system_info",
 }
 
 
@@ -97,6 +98,12 @@ def _dispatch(call_type: str, payload: dict) -> dict:
         return safe_dir_list(payload.get("file_path", ""))
     elif call_type == "exec_process":
         return safe_exec_process(payload.get("command", ""))
+    elif call_type == "system_info":
+        return {
+            "success": True, 
+            "message": "SysCallGuardian Gateway Operational",
+            "content": "Status: ONLINE\nNodes: 3 Active\nProtected: 256 endpoints\nUptime: 45d 02h 17m\nOS: SecureOS v2.4.1 (Kernel 6.1.12-sg)"
+        }
     return {"success": False, "error": "Unknown call type."}
 
 

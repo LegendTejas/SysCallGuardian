@@ -51,6 +51,17 @@ def api_file_delete():
     return jsonify(result), code
 
 
+@syscall_bp.route("/api/syscall/dir_list", methods=["POST"])
+@require_auth
+def api_dir_list():
+    data = request.get_json(silent=True) or {}
+    if not data.get("file_path"):
+        return jsonify({"error": "file_path is required."}), 400
+    result = handle_syscall("dir_list", _get_user_with_risk(g.user), data)
+    code = 200 if result["status"] == "allowed" else 403
+    return jsonify(result), code
+
+
 @syscall_bp.route("/api/syscall/execute", methods=["POST"])
 @require_auth
 def api_exec_process():
@@ -58,5 +69,14 @@ def api_exec_process():
     if not data.get("command"):
         return jsonify({"error": "command is required."}), 400
     result = handle_syscall("exec_process", _get_user_with_risk(g.user), data)
+    code = 200 if result["status"] == "allowed" else 403
+    return jsonify(result), code
+
+
+@syscall_bp.route("/api/syscall/system_info", methods=["GET", "POST"])
+@require_auth
+def api_system_info():
+    """Safe system information syscall."""
+    result = handle_syscall("system_info", _get_user_with_risk(g.user), {})
     code = 200 if result["status"] == "allowed" else 403
     return jsonify(result), code
