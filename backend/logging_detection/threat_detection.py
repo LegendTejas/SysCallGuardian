@@ -145,6 +145,20 @@ def get_suspicious_users() -> list[dict]:
         conn.close()
 
 
+def get_threat_events() -> list[dict]:
+    """Return the raw chronological log of all individual threat detections (most recent first)."""
+    # Create a copy and sort by time descending (original is oldest first)
+    events = list(_threat_log)
+    events.reverse()
+    
+    for e in events:
+        # Ensure risk_level is present for frontend
+        if "risk_level" not in e:
+             e["risk_level"] = e.get("level", "high") 
+    
+    return events
+
+
 def _risk_level(score: float) -> str:
     if score >= 70: return "critical"
     if score >= 40: return "high"

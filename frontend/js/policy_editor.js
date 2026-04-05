@@ -29,6 +29,7 @@ const PE_ALL_ROLES = ['admin', 'developer', 'guest'];
 
 function openCreatePolicyModal() {
   document.getElementById('modal-title').textContent = '+ New Policy';
+  document.getElementById('modal').classList.add('wide');
   document.getElementById('modal-body').innerHTML    = _buildPolicyForm(null);
   document.getElementById('modal-footer').innerHTML  = `
     <button class="btn sm" onclick="closeModal()">Cancel</button>
@@ -50,6 +51,7 @@ function openEditPolicyModal(policyJson) {
   }
   
   document.getElementById('modal-title').textContent = `Edit — ${policy.name}`;
+  document.getElementById('modal').classList.add('wide');
   document.getElementById('modal-body').innerHTML    = _buildPolicyForm(policy);
   document.getElementById('modal-footer').innerHTML  = `
     <button class="btn sm" onclick="closeModal()">Cancel</button>
@@ -85,69 +87,77 @@ function _buildPolicyForm(existing) {
     background:var(--surface);color:var(--text);outline:none;`;
 
   return `
-    <!-- Policy Name -->
-    <div class="modal-field">
-      <div class="modal-field-label">Policy Name</div>
-      <input id="pe-name" type="text"
-        value="${existing?.name || ''}"
-        placeholder="e.g. block_guest_exec"
-        style="${inputStyle}"
-        onfocus="this.style.borderColor='var(--accent)'"
-        onblur="this.style.borderColor='var(--border)'"
-        ${existing ? 'disabled style="' + inputStyle + 'opacity:0.6;cursor:not-allowed;"' : ''}/>
-      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px;">
-        Use snake_case · must be unique · cannot be changed after creation
-      </div>
-    </div>
+    <div style="display:grid; grid-template-columns: 1fr 1.2fr; gap: 24px; margin-bottom: 16px;">
+      <!-- Column Left: Name & Action -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <!-- Policy Name -->
+        <div class="modal-field" style="margin-bottom:0;">
+          <div class="modal-field-label">Policy Name</div>
+          <input id="pe-name" type="text"
+            value="${existing?.name || ''}"
+            placeholder="e.g. block_guest_exec"
+            style="${inputStyle}"
+            onfocus="this.style.borderColor='var(--accent)'"
+            onblur="this.style.borderColor='var(--border)'"
+            ${existing ? 'disabled style="' + inputStyle + 'opacity:0.6;cursor:not-allowed;"' : ''}/>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px;">
+            Use snake_case · must be unique
+          </div>
+        </div>
 
-    <!-- Action -->
-    <div class="modal-field">
-      <div class="modal-field-label">Syscall Action</div>
-      <select id="pe-action" style="${inputStyle}cursor:pointer;"
-        onfocus="this.style.borderColor='var(--accent)'"
-        onblur="this.style.borderColor='var(--border)'">
-        <option value="">— select the syscall this rule governs —</option>
-        ${PE_VALID_ACTIONS.map(a =>
-          `<option value="${a.value}" ${selAct === a.value ? 'selected' : ''}>${a.label}</option>`
-        ).join('')}
-      </select>
-    </div>
+        <!-- Action -->
+        <div class="modal-field" style="margin-bottom:0;">
+          <div class="modal-field-label">Syscall Action</div>
+          <select id="pe-action" style="${inputStyle}cursor:pointer;"
+            onfocus="this.style.borderColor='var(--accent)'"
+            onblur="this.style.borderColor='var(--border)'">
+            <option value="">— select syscall —</option>
+            ${PE_VALID_ACTIONS.map(a =>
+              `<option value="${a.value}" ${selAct === a.value ? 'selected' : ''}>${a.label}</option>`
+            ).join('')}
+          </select>
+        </div>
+      </div>
 
-    <!-- Allow Roles -->
-    <div class="modal-field">
-      <div class="modal-field-label">Allow Roles</div>
-      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:8px;">
-        Roles explicitly permitted to perform this action
-      </div>
-      <div style="display:flex;gap:14px;">
-        ${PE_ALL_ROLES.map(r => `
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;
-                         font-size:13px;font-family:var(--mono);user-select:none;">
-            <input type="checkbox" id="pe-allow-${r}" value="${r}"
-              style="accent-color:var(--accent);width:14px;height:14px;"
-              ${selAllow.includes(r) ? 'checked' : ''}
-              onchange="validatePolicyForm()"/>
-            ${r}
-          </label>`).join('')}
-      </div>
-    </div>
+      <!-- Column Right: Roles -->
+      <div style="display:flex; flex-direction:column; gap:16px; padding-left: 24px; border-left: 1px solid var(--border);">
+        <!-- Allow Roles -->
+        <div class="modal-field" style="margin-bottom:0;">
+          <div class="modal-field-label">Allow Roles</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:8px;">
+            Roles explicitly permitted
+          </div>
+          <div style="display:flex;gap:14px;">
+            ${PE_ALL_ROLES.map(r => `
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;
+                             font-size:13px;font-family:var(--mono);user-select:none;">
+                <input type="checkbox" id="pe-allow-${r}" value="${r}"
+                  style="accent-color:var(--accent);width:14px;height:14px;"
+                  ${selAllow.includes(r) ? 'checked' : ''}
+                  onchange="validatePolicyForm()"/>
+                ${r}
+              </label>`).join('')}
+          </div>
+        </div>
 
-    <!-- Deny Roles -->
-    <div class="modal-field">
-      <div class="modal-field-label">Deny Roles</div>
-      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:8px;">
-        Roles explicitly blocked — evaluated before allow list
-      </div>
-      <div style="display:flex;gap:14px;">
-        ${PE_ALL_ROLES.map(r => `
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;
-                         font-size:13px;font-family:var(--mono);user-select:none;">
-            <input type="checkbox" id="pe-deny-${r}" value="${r}"
-              style="accent-color:var(--danger);width:14px;height:14px;"
-              ${selDeny.includes(r) ? 'checked' : ''}
-              onchange="validatePolicyForm()"/>
-            ${r}
-          </label>`).join('')}
+        <!-- Deny Roles -->
+        <div class="modal-field" style="margin-bottom:0;">
+          <div class="modal-field-label">Deny Roles</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:8px;">
+            Roles explicitly blocked (eval first)
+          </div>
+          <div style="display:flex;gap:14px;">
+            ${PE_ALL_ROLES.map(r => `
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;
+                             font-size:13px;font-family:var(--mono);user-select:none;">
+                <input type="checkbox" id="pe-deny-${r}" value="${r}"
+                  style="accent-color:var(--danger);width:14px;height:14px;"
+                  ${selDeny.includes(r) ? 'checked' : ''}
+                  onchange="validatePolicyForm()"/>
+                ${r}
+              </label>`).join('')}
+          </div>
+        </div>
       </div>
     </div>
 

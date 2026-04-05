@@ -56,4 +56,10 @@ const apiGetLogs = (p = {}) => {
   return api('GET', `/api/logs?${q}`);
 };
 const apiGetThreats = () => api('GET', '/api/threats');
+const apiGetThreatEvents = () => api('GET', '/api/threats/events');
 const apiVerifyLogs = () => api('GET', '/api/logs/verify');
+
+// Policies Advanced
+const apiExportPolicies = () => api('GET', '/api/policies/export');
+const apiImportPolicies = (data) => api('POST', '/api/policies/import', data);
+const apiDeletePolicy  = (id) => api('DELETE', `/api/policies/${id}`);

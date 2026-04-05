@@ -9,7 +9,7 @@ from auth_rbac.auth_controller    import register_user, login_user, logout_user,
 from auth_rbac.permission_middleware import require_auth, require_role
 from auth_rbac.roles              import get_all_roles, load_permissions
 from policy_engine.policy_loader  import (
-    get_all_policies_from_db, create_policy, update_policy, reload_policies
+    get_all_policies_from_db, create_policy, update_policy, reload_policies, bulk_import_policies
 )
 from database.db import get_connection
 
@@ -241,7 +241,7 @@ def api_roles():
 
 @policy_bp.route("/api/policies", methods=["GET"])
 @require_auth
-@require_role("admin")
+@require_role("developer")
 def api_get_policies():
     return jsonify(get_all_policies_from_db()), 200
 
@@ -305,6 +305,46 @@ def api_update_policy(policy_id: int):
     reload_policies()
     load_permissions()
     return jsonify({"message": result["message"]}), 200
+
+
+@policy_bp.route("/api/policies/export", methods=["GET"])
+@require_auth
+@require_role("admin")
+def api_export_rule_set():
+    """GET /api/policies/export — Download all policies as a JSON rule-set."""
+    policies = get_all_policies_from_db()
+    return jsonify(policies), 200
+
+
+@policy_bp.route("/api/policies/import", methods=["POST"])
+@require_auth
+@require_role("admin")
+def api_import_rule_set():
+    """POST /api/policies/import — Upload a JSON rule-set to update policies."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, list):
+        return jsonify({"error": "Expected a JSON list of policies."}), 400
+    
+    result = bulk_import_policies(data)
+    if not result["success"]:
+        return jsonify({"error": result["error"]}), 500
+        
+    return jsonify({"message": f"Successfully imported {result['imported']} security policies."}), 200
+
+
+@policy_bp.route("/api/policies/<int:policy_id>", methods=["DELETE"])
+@require_auth
+@require_role("admin")
+def api_delete_policy(policy_id: int):
+    """DELETE /api/policies/:id — Remove a policy permanently."""
+    conn = get_connection()
+    try:
+        conn.execute("DELETE FROM policies WHERE id = ?", (policy_id,))
+        conn.commit()
+        reload_policies()
+        return jsonify({"success": True, "message": "Policy deleted."}), 200
+    finally:
+        conn.close()
 
 
 # ── User Management Routes (Phase 4) ──────────────────────────────────────────

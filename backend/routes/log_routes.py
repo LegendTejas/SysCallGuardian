@@ -9,7 +9,7 @@ from flask import Blueprint, request, jsonify, g
 from auth_rbac.permission_middleware import require_auth, require_role
 from logging_detection.audit_logger  import get_logs
 from logging_detection.log_integrity import verify_all_logs, verify_single_log
-from logging_detection.threat_detection import get_suspicious_users
+from logging_detection.threat_detection import get_suspicious_users, get_threat_events
 
 log_bp = Blueprint("logs", __name__)
 
@@ -86,6 +86,15 @@ def api_get_threats():
     """GET /api/threats — flagged users with risk scores"""
     users = get_suspicious_users()
     return jsonify(users), 200
+
+
+@log_bp.route("/api/threats/events", methods=["GET"])
+@require_auth
+@require_role("admin")
+def api_get_threat_events():
+    """GET /api/threats/events — chronological threat log (raw events)"""
+    events = get_threat_events()
+    return jsonify(events), 200
 
 
 @log_bp.route("/api/dashboard/stats", methods=["GET"])

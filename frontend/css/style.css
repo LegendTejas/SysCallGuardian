@@ -315,7 +315,8 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 /* ══ MODAL ══ */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 999; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
 .modal-overlay.open { display: flex; }
-.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; width: 480px; max-width: 95vw; box-shadow: var(--shadow-md); animation: modalIn 0.2s ease; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; width: 480px; max-width: 95vw; box-shadow: var(--shadow-md); animation: modalIn 0.2s ease; transition: width 0.3s ease; }
+.modal.wide { width: 840px; }
 @keyframes modalIn { from { opacity: 0; transform: scale(0.97) translateY(8px); } to { opacity: 1; transform: none; } }
 .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
 .modal-title { font-size: 16px; font-weight: 500; }

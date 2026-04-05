@@ -232,10 +232,13 @@
           </div>
           <div class="card">
             <div class="card-header" style="margin-bottom:14px;">
-              <div><div class="card-title">Suspicious Users</div><div class="card-subtitle">risk-scored · click for details</div></div>
+              <div><div class="card-title">Suspicious Users</div><div class="card-subtitle">risk-scored · high activity flags</div></div>
               <button class="btn sm" onclick="goPage('threats')">View All →</button>
             </div>
-            <!-- Populated by JS -->
+            <div id="suspicious-users-list">
+              <!-- Populated by JS -->
+              <div style="padding:20px;color:var(--text3);font-family:var(--mono);font-size:11px;text-align:center;">Scanning activity…</div>
+            </div>
           </div>
         </div>
       </div>
@@ -337,7 +340,12 @@
           <button class="btn sm" onclick="renderPolicies()" style="font-family:var(--mono);">
             <span style="font-size:14px;margin-right:4px;">🔄</span> Sync
           </button>
-          <button class="btn primary" onclick="openCreatePolicyModal()">+ New Policy</button>
+          <div class="admin-only" style="display:flex;gap:8px;">
+            <button class="btn" onclick="exportPolicies()">↓ Export Rule-set</button>
+            <button class="btn" onclick="document.getElementById('policy-import-input').click()">↑ Import Rule-set</button>
+            <input type="file" id="policy-import-input" style="display:none" accept=".json" onchange="importPolicies(this)">
+          </div>
+          <button class="btn primary admin-only" onclick="openCreatePolicyModal()">+ New Policy</button>
         </div>
       </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;">
@@ -554,18 +562,22 @@
       <div class="page" id="page-threats">
         <div class="page-header">
           <div><h1>Threat Detection</h1><p>Rule-based detection · risk scoring · live alerts</p></div>
-          <button class="btn danger" onclick="showToast('danger','Alert broadcast sent to all admins!')">⚠ Broadcast Alert</button>
+          <div style="display:flex;gap:8px;">
+            <button class="btn" onclick="loadThreatsPage();showToast('info','Threat data synchronized.')">↻ Refresh</button>
+            <button class="btn danger" onclick="showToast('danger','Alert broadcast sent to all admins!')">⚠ Broadcast Alert</button>
+          </div>
         </div>
         <div class="threat-grid">
-          <div class="threat-card alert-card"><div class="stat-label" style="color:var(--danger)">Critical Threats</div><div class="threat-value" style="color:var(--danger)">0</div><div class="sus-meta">No critical alerts</div></div>
-          <div class="threat-card"><div class="stat-label">Medium Risk</div><div class="threat-value" style="color:var(--warning)">0</div><div class="sus-meta">Scanning user activity…</div></div>
-          <div class="threat-card"><div class="stat-label">Blocked Attempts Today</div><div class="threat-value">0</div><div class="stat-delta down">live computing…</div></div>
-          <div class="threat-card"><div class="stat-label">Risk Engine Status</div><div class="threat-value" style="color:var(--accent);font-size:18px;margin-top:12px">● ACTIVE</div><div class="sus-meta">Real-time scoring · SHA-256 log chain</div></div>
+          <div class="threat-card alert-card"><div class="stat-label" style="color:var(--danger)">Critical Threats</div><div class="threat-value" id="threat-count-critical" style="color:var(--danger)">0</div><div class="sus-meta">No critical alerts</div></div>
+          <div class="threat-card"><div class="stat-label">Medium Risk</div><div class="threat-value" id="threat-count-medium" style="color:var(--warning)">0</div><div class="sus-meta">Scanning user activity…</div></div>
+          <div class="threat-card"><div class="stat-label">Blocked Attempts Today</div><div class="threat-value" id="threat-count-blocked">0</div><div class="stat-delta down">live computing…</div></div>
+          <div class="threat-card"><div class="stat-label">Risk Engine Status</div><div class="threat-value" id="threat-status-engine" style="color:var(--accent);font-size:18px;margin-top:12px">● ACTIVE</div><div class="sus-meta">Real-time scoring · SHA-256 log chain</div></div>
         </div>
         <div class="card">
           <div class="card-header"><div class="card-title">Threat Events</div><span class="tag danger-tag">Checking…</span></div>
-          <div class="threat-events">
+          <div class="threat-events" id="threat-events-list">
             <!-- Populated by JS -->
+            <div style="padding:40px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px;">Initializing threat engine…</div>
           </div>
         </div>
       </div>

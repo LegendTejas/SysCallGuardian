@@ -65,11 +65,11 @@ function applyRBAC(role) {
       const el = document.getElementById('nav-' + id);
       if (el) el.style.display = 'none';
     });
-    // Hide Access label (Users+Policies section header is misleading when Users is hidden)
-    // But show Policies under a different grouping conceptually
-    // Keep label-access hidden, policies nav stays visible
+    // Ensure Policies & Access label are visible
     const labelAccess = document.getElementById('label-access');
-    if (labelAccess) labelAccess.style.display = 'none';
+    if (labelAccess) labelAccess.style.display = 'block';
+    const navPolicies = document.getElementById('nav-policies');
+    if (navPolicies) navPolicies.style.display = 'flex';
 
     // Mark Developer personal view
     if (title && !title.textContent.includes('(Personal View)')) {
@@ -193,6 +193,7 @@ function openThreatModal(user, level, desc, risk) {
 function closeModal(e) {
   if (e && e.target !== document.getElementById('modal-overlay')) return;
   document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('modal').classList.remove('wide');
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

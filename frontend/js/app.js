@@ -82,6 +82,12 @@ async function refreshDashboard() {
     if (document.getElementById('ov-filter-user').children.length <= 1) {
       populateFilterDropdowns(extended);
     }
+
+    // 6. Sync High-level threats/badges (Admins only)
+    const role = (localStorage.getItem('sg_role') || 'guest').toLowerCase();
+    if (role === 'admin') {
+      loadSuspiciousUsers();
+    }
   } else {
     // API failed, display error state instead of getting stuck on loading
     setStatCard('stat-total', 'Error', `Connection failed`);
@@ -177,12 +183,96 @@ async function loadSuspiciousUsers() {
   const res = await apiGetThreats();
   if (!res.ok) return;
 
-  const count = (res.data || []).length;
+  const threats = res.data || [];
+  const count   = threats.length;
+
+  // 1. Update Navigation Badge
   const badge = document.querySelector('#nav-threats .nav-badge');
   if (badge) {
     badge.textContent = count;
     badge.style.display = count > 0 ? 'flex' : 'none';
   }
+
+  // 2. Update Overview Card (if it exists)
+  const list = document.getElementById('suspicious-users-list');
+  if (list) {
+    if (count === 0) {
+      list.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:11px;opacity:0.6;">✓ No active threats detected.</div>`;
+    } else {
+      list.innerHTML = threats.slice(0, 4).map(t => `
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;" 
+             onclick="openUserModal('${t.username}','${t.role}','Flagged','—','${t.risk_score}')">
+          <div class="user-avatar" style="width:32px;height:32px;font-size:12px;">${t.username[0].toUpperCase()}</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:500;">${t.username}</div>
+            <div style="font-size:10px;color:var(--danger);font-family:var(--mono);">${t.reason}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;font-weight:600;color:var(--danger);">${t.risk_score}</div>
+            <div style="font-size:9px;color:var(--text3);font-family:var(--mono);">RISK</div>
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  // 3. Update Threats Page Table (if we're on it)
+  if (document.getElementById('page-threats').classList.contains('active')) {
+    loadThreatsPage();
+  }
+}
+
+async function loadThreatsPage() {
+  const list = document.getElementById('threat-events-list');
+  if (!list) return;
+
+  // 1. Fetch data
+  const [threatRes, statsRes] = await Promise.all([
+    apiGetThreatEvents(),
+    apiGetStats()
+  ]);
+  
+  if (!threatRes.ok) return;
+
+  const threats = threatRes.data || [];
+  const stats   = statsRes.ok ? statsRes.data : { blocked: 0 };
+
+  // 2. Update Header Tag
+  const tag = document.querySelector('#page-threats .tag.danger-tag');
+  if (tag) tag.textContent = `${threats.length} events logged`;
+
+  // 3. Update Summary Cards
+  const criticalCount = threats.filter(t => t.risk_level === 'critical' || t.risk_score >= 70).length;
+  const mediumCount   = threats.filter(t => t.risk_level === 'medium' || t.risk_level === 'high' || (t.risk_score >= 20 && t.risk_score < 70)).length;
+
+  setEl('threat-count-critical', criticalCount);
+  setEl('threat-count-medium',   mediumCount);
+  setEl('threat-count-blocked',  stats.blocked || 0);
+  
+  const engineStatus = document.getElementById('threat-status-engine');
+  if (engineStatus) engineStatus.textContent = threats.length > 0 ? '● ACTIVE' : '● IDLE';
+
+  // 4. Render Event List (Grid Layout)
+  if (threats.length === 0) {
+    list.innerHTML = `<div style="padding:60px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:13px;opacity:0.5;">
+      <div style="font-size:32px;margin-bottom:12px;">🛡</div>
+      All systems clear. No threat events recorded in the current window.
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = threats.map(t => `
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:100px 140px 1fr 120px;align-items:center;gap:16px;background:var(--surface);">
+      <div><span class="threat-badge ${t.risk_level}">${t.risk_level.toUpperCase()}</span></div>
+      <div style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text);">${t.username}</div>
+      <div style="font-size:12px;color:var(--text2);">${t.reason}</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);text-align:right;">${formatTime(t.time)}</div>
+    </div>`).join('');
+}
+
+/** Helper to safely set textContent */
+function setEl(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
 }
 
 // ── Live Feed (Simulated for Demo) ───────────────────────────────────────────
@@ -271,11 +361,25 @@ window.renderPolicies = async function() {
   POLICIES_DATA = Array.isArray(result.data) ? result.data : (result.data?.policies || []);
   const active  = POLICIES_DATA.filter(p => p.is_active).length;
 
+  const role = (localStorage.getItem('sg_role') || 'guest').toLowerCase();
+  
   // Update header and stat cards
   const tag = document.querySelector('#page-policies .tag.live');
   if (tag) tag.textContent = `${active} enabled`;
   const countEl = document.querySelector('#page-policies .stat-value');
   if (countEl) countEl.textContent = active;
+
+  // READ-ONLY Banner for Developers
+  const pageHeader = document.querySelector('#page-policies .page-header p');
+  const createBtn = document.querySelector('#page-policies .btn.primary');
+  
+  if (role === 'developer') {
+    if (pageHeader) pageHeader.innerHTML = `<span style="color:var(--accent);font-weight:600;">Policies: Read-only preview</span> · helps in understanding why a script might be getting blocked`;
+    if (createBtn) createBtn.style.display = 'none';
+  } else {
+    if (pageHeader) pageHeader.textContent = 'Visual rule engine for mediated system call access.';
+    if (createBtn) createBtn.style.display = '';
+  }
 
   if (!POLICIES_DATA.length) {
     list.innerHTML = `
@@ -283,7 +387,7 @@ window.renderPolicies = async function() {
                   font-family:var(--mono);font-size:12px;border:1px dashed var(--border);border-radius:var(--radius);">
         <div style="font-size:24px;margin-bottom:12px;opacity:0.3;">🛡</div>
         No active policies found in the gateway.<br>All system calls currently use default RBAC.
-        <button class="btn primary sm" style="margin-top:16px;" onclick="openCreatePolicyModal()">+ Create First Policy</button>
+        ${role === 'admin' ? '<button class="btn primary sm" style="margin-top:16px;" onclick="openCreatePolicyModal()">+ Create First Policy</button>' : ''}
       </div>`;
     return;
   }
@@ -305,12 +409,16 @@ window.renderPolicies = async function() {
 
     return `
       <div class="policy-item">
-        <div class="policy-status-toggle ${p.is_active ? 'on' : 'off'}"
-             onclick="togglePolicy(${p.id}, ${p.is_active}, event)"
-             title="${p.is_active ? 'Click to disable' : 'Click to enable'}">
-        </div>
-        <div class="policy-info" style="cursor:pointer;"
-             onclick="openEditPolicyModal('${safeP}')">
+        ${role === 'admin' ? `
+          <div class="policy-status-toggle ${p.is_active ? 'on' : 'off'}"
+               onclick="togglePolicy(${p.id}, ${p.is_active}, event)"
+               title="${p.is_active ? 'Click to disable' : 'Click to enable'}">
+          </div>` : `
+          <div class="policy-status-indicator" style="width:12px;height:12px;border-radius:3px;background:${p.is_active ? 'var(--accent)' : 'var(--text3)'};margin:0 14px;"></div>
+        `}
+        <div class="policy-info" 
+             style="${role === 'admin' ? 'cursor:pointer;' : ''}"
+             onclick="${role === 'admin' ? `openEditPolicyModal('${safeP}')` : ''}">
           <div class="policy-name">${p.name}</div>
           <div class="policy-desc">
             action: <strong>${rule.action || '—'}</strong> ·
@@ -322,11 +430,12 @@ window.renderPolicies = async function() {
           <span class="tag ${p.is_active ? 'live' : 'info-tag'}">
             ${p.is_active ? 'ACTIVE' : 'DISABLED'}
           </span>
+          ${role === 'admin' ? `
           <button class="btn sm"
             onclick="event.stopPropagation(); openEditPolicyModal('${safeP}')"
             style="font-size:11px;padding:3px 10px;">
             Edit
-          </button>
+          </button>` : ''}
         </div>
       </div>`;
   }).join('');
@@ -495,34 +604,80 @@ async function verifyIntegrity() {
   }
 }
 
+// ── Advanced Policies (Export/Import) ────────────────────────────────────────
+
+async function exportPolicies() {
+  showToast('info', 'Generating rule-set export…');
+  const res = await apiExportPolicies();
+  if (!res.ok) {
+    showToast('danger', 'Failed to export policies.');
+    return;
+  }
+
+  const data = JSON.stringify(res.data, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url  = window.URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  const date = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `syscall_guardian_rules_${date}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+  
+  showToast('success', 'Security rule-set exported successfully.');
+}
+
+function importPolicies(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) {
+        showToast('danger', 'Invalid format: Rule-set must be a JSON array.');
+        return;
+      }
+
+      showToast('info', 'Uploading security rule-set…');
+      const res = await apiImportPolicies(data);
+      if (res.ok) {
+        showToast('success', res.data.message || 'Policies imported successfully.');
+        renderPolicies(); // Refresh list
+      } else {
+        showToast('danger', 'Import failed: ' + (res.data?.error || 'Unknown error'));
+      }
+    } catch (err) {
+      showToast('danger', 'Parse error: Selected file is not valid JSON.');
+    }
+    // Reset input so it can be used again for the same file
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+async function deletePolicyUI(id, name) {
+  if (!confirm(`Are you sure you want to PERMANENTLY delete the policy "${name}"?`)) return;
+
+  showToast('info', 'Deleting policy…');
+  const res = await apiDeletePolicy(id);
+  if (res.ok) {
+    showToast('success', `Policy "${name}" removed.`);
+    renderPolicies();
+  } else {
+    showToast('danger', 'Delete failed: ' + (res.data?.error || 'Access restricted'));
+  }
+}
+
 // ── System Call Gateway ───────────────────────────────────────────────────────
 // NOTE: initSyscallPage, selectOp, updatePreview, executeSyscall,
 //       clearSyscallHistory, loadScenario, and currentOp are all defined in
 //       the inline <script> block in index.html (the authoritative implementation).
-//       They are NOT duplicated here to avoid re-declaration errors and conflicts.
-
-// ── Threats ──────────────────────────────────────────────────────────────────
-
-async function loadThreatsPage() {
-  const res = await apiGetThreats();
-  if (!res.ok) return;
-
-  const users = res.data;
-  const container = document.querySelector('.threat-events');
-  if (!container) return;
-
-  container.innerHTML = users.map(u => {
-    const level = u.risk_score >= 70 ? 'critical' : u.risk_score >= 40 ? 'warning' : 'low';
-    return `
-      <div class="threat-event ${level}" onclick="openThreatModal('${u.username}','${level}','Risk score: ${u.risk_score}','${Math.round(u.risk_score)}')">
-        <div class="threat-event-body">
-          <div class="threat-event-title">${u.username} — ${level.toUpperCase()} Risk</div>
-          <div class="threat-event-meta">Score: ${u.risk_score.toFixed(1)} · ${u.role}</div>
-        </div>
-        <span class="threat-badge ${level}">${level.toUpperCase()}</span>
-      </div>`;
-  }).join('');
-}
+// Consolidating startup logic and removing legacy duplicates.
 
 
 // ── Startup ──────────────────────────────────────────────────────────────────

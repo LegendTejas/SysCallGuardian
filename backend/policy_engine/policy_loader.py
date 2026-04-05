@@ -139,6 +139,44 @@ def import_from_file(filepath: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
+def bulk_import_policies(policies_list: list[dict]) -> dict:
+    """Bulk insert or replace policies from a list of objects."""
+    conn = get_connection()
+    try:
+        count = 0
+        for entry in policies_list:
+            name = entry.get("name")
+            rule = entry.get("rule_json")  # Might be 'rule' or 'rule_json' depending on source
+            if not rule and "rule" in entry:
+                rule = entry["rule"]
+            
+            if not name or not rule:
+                continue
+                
+            # Validate rule if it's a dict
+            if isinstance(rule, dict):
+                _validate_rule(rule)
+                rule_str = json.dumps(rule)
+            else:
+                # If it's a string, validate by parsing
+                _validate_rule(json.loads(rule))
+                rule_str = rule
+
+            conn.execute(
+                "INSERT OR REPLACE INTO policies (name, rule_json, is_active) VALUES (?, ?, ?)",
+                (name, rule_str, int(entry.get("is_active", 1)))
+            )
+            count += 1
+        
+        conn.commit()
+        reload_policies()
+        return {"success": True, "imported": count}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    finally:
+        conn.close()
+
+
 # ── Validation ────────────────────────────────────────────────────────────────
 
 VALID_ACTIONS = {
