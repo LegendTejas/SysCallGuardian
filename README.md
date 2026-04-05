@@ -44,21 +44,23 @@ The gateway will be active at `http://127.0.0.1:5000`.
 
 ## 🔐 Core User Credentials (Test Accounts)
 
-| Role | Username | Password |
-| :--- | :--- | :--- |
-| **Admin** | `Tejax` | `U@itej99x` |
-| **Admin** | `Akael` | `Akhil9890` |
-| **Developer** | `Vancika` | `Van112358` |
-| **Guest** | *Your Email* | *OTP via Email* |
+| Role | Username | Password | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `Tejax` | `U@itej99x` | Security oversight & Policy management |
+| **Developer** | `Vancika` | `Van112358` | Application development & Debugging |
+| **Guest A** | `GuestA` | `Guest@123` | Restricted trial access (Read-only) |
+| **Guest B** | `GuestB` | `Guest@456` | Restricted trial access (Read-only) |
 
 ---
 
 ## ✨ Key Features
 - **Real-time Syscall Interception**: Monitoring of `file_read`, `file_write`, `exec_process`, and more.
 - **Dynamic RBAC**: Dedicated dashboards for Admins, Developers, and Guests with strict data isolation.
+- **Managed Registration**: Public self-registration is disabled. New users must be registered by an **Admin** or **Developer** directly via the secure dashboard.
 - **SHA-256 Audit Chain**: Cryptographically linked logs to detect and prevent unauthorized tampering.
-- **OTP Recovery**: Secure password reset flow for Guest accounts.
+- **Forgot Password**: Secure password reset flow remains active for all users via Email OTP.
 - **Threat Intelligence**: Automated risk scoring and user flagging based on heuristic analysis.
+- **CRT Terminal UI**: Modern, premium dashboard with a CRT scanline aesthetic and status-aware log coloring.
 
 ---
 
