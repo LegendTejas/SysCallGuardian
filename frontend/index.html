@@ -44,23 +44,6 @@
     <div class="feature-pills" style="margin-top:20px; justify-content:center;">
       <span class="pill">RBAC</span><span class="pill">bcrypt auth</span><span class="pill">SHA-256 logs</span><span class="pill">threat detection</span>
     </div>
-    <div id="signup-link-container" style="display: none; text-align: center; margin-top: 16px; font-size: 13px; color: var(--text3);">
-      Don't have an account? <button type="button" class="link-btn" onclick="toggleRegister()" style="font-size:13px;">Sign Up</button>
-    </div>
-  </div>
-
-  <div class="login-card" id="register-card" style="display: none;">
-    <h2>Create Account</h2>
-    <p class="subtitle">Register to get Guest access to the gateway.</p>
-    <div class="form-group"><label>Username</label><input type="text" id="reg-username" placeholder="Choose a username" autocomplete="off"/></div>
-    <div class="form-group"><label>Email address</label><input type="email" id="reg-email" placeholder="example@domain.com" autocomplete="off"/></div>
-    <div class="form-group"><label>Password</label><div class="input-row"><input type="password" id="reg-password" placeholder="••••••••••"/><span class="input-icon" onclick="toggleRegPwd()">👁</span></div></div>
-    <div class="form-group"><label>Confirm Password</label><input type="password" id="reg-password-confirm" placeholder="••••••••••"/></div>
-    <button class="login-btn" onclick="doRegister()" style="margin-top: 16px;">Create Account</button>
-    <div id="reg-error-msg" class="error-msg">⚠️ Error registering.</div>
-    <div style="text-align: center; margin-top: 16px; font-size: 13px; color: var(--text3);">
-      Already have an account? <button type="button" class="link-btn" onclick="toggleRegister()" style="font-size:13px;">Log In</button>
-    </div>
   </div>
 </div>
 
