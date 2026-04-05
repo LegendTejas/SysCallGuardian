@@ -21,12 +21,23 @@ policy_bp = Blueprint("policy", __name__)
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 @auth_bp.route("/api/auth/register", methods=["POST"])
+@require_auth
+@require_role("developer")
 def api_register():
     data     = request.get_json(silent=True) or {}
     username = data.get("username", "").strip()
     email    = data.get("email", "").strip()
     password = data.get("password", "")
     role     = data.get("role", "guest")
+
+    # Security: Hierarchy check
+    # Admins can create anyone; Developers can ONLY create guests.
+    creator_role = g.user.get("role", "guest")
+    if creator_role == "developer" and role != "guest":
+        return jsonify({
+            "error": "Forbidden.",
+            "detail": "Developers can only create Guest accounts. Admins are required for higher roles."
+        }), 403
 
     if not username or not password:
         return jsonify({"error": "username and password are required."}), 400
