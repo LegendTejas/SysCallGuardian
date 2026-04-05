@@ -276,9 +276,34 @@
           <button class="btn sm" onclick="loadUsersPage()" style="font-family:var(--mono);">
             <span style="font-size:14px;margin-right:4px;">🔄</span> Sync
           </button>
-          <button class="btn primary" onclick="showToast('info','User creation form coming next!')">+ Add User</button>
+          <button class="btn primary" id="add-user-toggle-btn" onclick="toggleAddUserForm()">+ Add User</button>
         </div>
       </div>
+
+        <!-- Add User Form (Hidden by default) -->
+        <div class="card" id="add-user-card" style="display:none; margin-bottom:24px; padding:20px; border:1px solid var(--accent-mid);">
+          <div class="card-header" style="margin-bottom:16px;">
+            <div class="card-title">Register New Project Member</div>
+            <button class="btn sm" onclick="toggleAddUserForm()">Cancel</button>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="form-group"><label>Username</label><input type="text" id="admin-reg-username" placeholder="e.g. jdoe" /></div>
+            <div class="form-group"><label>Email Address</label><input type="email" id="admin-reg-email" placeholder="jdoe@example.com" /></div>
+            <div class="form-group"><label>Initial Password</label><input type="password" id="admin-reg-password" placeholder="••••••••••" /></div>
+            <div class="form-group">
+              <label>Assign Role</label>
+              <select id="admin-reg-role" class="filter-select" style="width:100%; height:38px;">
+                <option value="guest">Guest (Read-only)</option>
+                <option value="developer">Developer (System Access)</option>
+                <option value="admin">Administrator (Full Control)</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+            <button class="btn primary" onclick="doAdminRegister()">Create Account →</button>
+          </div>
+          <div id="admin-reg-error" class="error-msg" style="margin-top:12px;"></div>
+        </div>
         
         <!-- Summary Stats Row -->
         <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:14px;margin-bottom:20px;">
@@ -296,7 +321,7 @@
           </div>
         </div>
         <div class="users-grid" id="users-grid">
-           <!-- Populated by JS in Phase 4 -->
+           <!-- Populated by JS -->
            <div style="padding:20px;color:var(--text3);font-family:var(--mono);font-size:12px">User management module active.</div>
         </div>
       </div>
