@@ -21,12 +21,20 @@ Authorization: Bearer <token>
 ### 1. Register User
 **POST** `/api/auth/register`
 
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+> 🔒 Requires `developer` role or higher. 
+> **Hierarchy Check:** Developers can ONLY register `guest` accounts. Administrators can register any role.
+
 **Request Body:**
 ```json
 {
-  "username": "tejas",
-  "password": "AdminPass1",
-  "role": "admin"
+  "username": "tejas_guest",
+  "password": "StrongPass123!",
+  "role": "guest"
 }
 ```
 
@@ -119,7 +127,7 @@ Authorization: Bearer <token>
 Authorization: Bearer <token>
 ```
 
-> 🔒 Requires `admin` role. Returns all users with real syscall statistics.
+> 🔒 Requires `developer` role or higher. Returns all users with real syscall statistics.
 
 **Response `200`:**
 ```json
@@ -157,7 +165,8 @@ Authorization: Bearer <token>
 Authorization: Bearer <token>
 ```
 
-> 🔒 Requires `admin` role. Admin cannot change their own role.
+> 🔒 Requires `developer` role or higher. Admin cannot change their own role. 
+> **Security:** Developers can only change a user's role TO `guest` and cannot modify existing `admin` accounts.
 
 **Request Body:**
 ```json
@@ -190,7 +199,7 @@ Authorization: Bearer <token>
 Authorization: Bearer <token>
 ```
 
-> 🔒 Requires `admin` role. Deletes all active sessions for the user — forces re-login.
+> 🔒 Requires `developer` role or higher. Deletes all active sessions for the user — forces re-login.
 
 **Response `200`:**
 ```json
@@ -210,7 +219,7 @@ Authorization: Bearer <token>
 Authorization: Bearer <token>
 ```
 
-> 🔒 Requires `admin` role. Resets `is_flagged = 0` and `risk_score = 0.0`.
+> 🔒 Requires `developer` role or higher. Resets `is_flagged = 0` and `risk_score = 0.0`.
 
 **Response `200`:**
 ```json
@@ -233,7 +242,7 @@ Authorization: Bearer <token>
 Authorization: Bearer <token>
 ```
 
-> 🔒 Requires `admin` role.
+> 🔒 Requires `developer` role or higher.
 
 **Response `200`:**
 ```json
