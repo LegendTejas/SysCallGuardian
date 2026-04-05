@@ -12,15 +12,17 @@ def reseed_users():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # 1. Remove all existing Admins and Developers
-    print("[1/3] Removing existing Admins and Developers...")
-    cursor.execute("DELETE FROM users WHERE role IN ('admin', 'developer')")
+    # 1. Remove all existing Users
+    print("[1/3] Removing existing Users...")
+    cursor.execute("DELETE FROM users")
     
     # 2. Define the new users
     new_users = [
         ("Tejax",   "U@itej99x", "admin",     "testingacctejax@gmail.com"), 
         ("Akael",   "Akhil9890", "admin",     None),
-        ("Vancika", "Van112358", "developer", "cvanshika995@gmail.com")
+        ("Vancika", "Van112358", "developer", "cvanshika995@gmail.com"),
+        ("GuestA",  "Guest@123", "guest",     "guest.a@example.com"),
+        ("GuestB",  "Guest@456", "guest",     "guest.b@example.com")
     ]
 
     print("[2/3] Seeding specified users...")
