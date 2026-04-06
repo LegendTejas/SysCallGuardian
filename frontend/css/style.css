@@ -103,16 +103,20 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 
 /* ══ STATS ══ */
 .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 24px; }
-.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; position: relative; overflow: hidden; cursor: pointer; transition: box-shadow 0.15s, transform 0.15s; }
-.stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
-.stat-card.green::before { background: var(--accent-mid); }
-.stat-card.red::before { background: var(--danger); }
-.stat-card.amber::before { background: #E6960A; }
-.stat-card.blue::before { background: var(--info); }
-.stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; font-family: var(--mono); font-weight: 500; margin-bottom: 10px; }
-.stat-value { font-size: 30px; font-weight: 300; color: var(--text); letter-spacing: -1px; line-height: 1; }
-.stat-delta { font-size: 12px; margin-top: 8px; font-family: var(--mono); }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; position: relative; overflow: hidden; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+.stat-card:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.08); transform: translateY(-3px); border-color: var(--border2); }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+.stat-card.green { background: linear-gradient(135deg, #FFFFFF 60%, #F5FAF8 100%); }
+.stat-card.red { background: linear-gradient(135deg, #FFFFFF 60%, #FFF5F4 100%); }
+.stat-card.amber { background: linear-gradient(135deg, #FFFFFF 60%, #FFFAF2 100%); }
+.stat-card.blue { background: linear-gradient(135deg, #FFFFFF 60%, #F2F8FF 100%); }
+.stat-card.green::before { background: linear-gradient(90deg, var(--accent-mid), var(--accent)); }
+.stat-card.red::before { background: linear-gradient(90deg, var(--danger), #E74C3C); }
+.stat-card.amber::before { background: linear-gradient(90deg, #E6960A, #F39C12); }
+.stat-card.blue::before { background: linear-gradient(90deg, var(--info), #3498DB); }
+.stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; font-family: var(--mono); font-weight: 600; margin-bottom: 12px; }
+.stat-value { font-size: 32px; font-weight: 600; color: var(--text); letter-spacing: -1.2px; line-height: 1; margin-bottom: 4px; }
+.stat-delta { font-size: 11px; font-family: var(--mono); font-weight: 500; display: flex; align-items: center; gap: 4px; }
 .stat-delta.up { color: var(--accent); }
 .stat-delta.down { color: var(--danger); }
 .stat-delta.warn { color: var(--warning); }
@@ -295,9 +299,24 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 .threat-badge.medium { background: var(--warning-light); color: var(--warning); }
 .threat-badge.low { background: var(--info-light); color: var(--info); }
 
-/* ══ AUDIT LOGS ══ */
-.filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-.filter-select { padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-family: var(--mono); font-size: 12px; color: var(--text2); outline: none; cursor: pointer; }
+/* ══ AUDIT LOGS / FILTERS ══ */
+.filter-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.filter-label { font-size: 10px; font-family: var(--mono); font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+.filter-select { padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 9px; background: var(--surface); font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; cursor: pointer; transition: all 0.15s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9B95' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+.filter-select:hover { border-color: var(--border2); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.filter-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,107,74,0.1); }
+
+/* ══ FILE EXPLORER ══ */
+.explorer-card { border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); }
+.explorer-header { padding: 14px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.explorer-list { display: flex; flex-direction: column; max-height: 280px; overflow-y: auto; padding: 4px; }
+.explorer-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 8px; cursor: pointer; transition: all 0.1s; }
+.explorer-item:hover { background: var(--accent-light); }
+.explorer-item-icon { font-size: 18px; width: 24px; text-align: center; }
+.explorer-item-info { flex: 1; }
+.explorer-item-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.explorer-item-meta { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+.explorer-empty { padding: 40px 20px; text-align: center; color: var(--text3); font-family: var(--mono); font-size: 12px; }
 .filter-select:focus { border-color: var(--accent); }
 .search-input { flex: 1; min-width: 180px; padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-family: var(--sans); font-size: 13px; outline: none; }
 .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(26,107,74,0.07); }
