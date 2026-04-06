@@ -78,10 +78,8 @@ async function refreshDashboard() {
     const filtered = await _applyOverviewFilter(extended.recent_logs || []);
     updateOverviewRecentLogs(filtered);
 
-    // 5. Populate Filter Dropdowns dynamically (only if first time)
-    if (document.getElementById('ov-filter-user').children.length <= 1) {
-      populateFilterDropdowns(extended);
-    }
+    // 5. Populate Filter Dropdowns dynamically
+    await populateFilterDropdowns(extended);
 
     // 6. Sync High-level threats/badges (Admins only)
     const role = (localStorage.getItem('sg_role') || 'guest').toLowerCase();
@@ -135,22 +133,32 @@ function setStatCard(id, value, delta) {
   if (deltaEl) deltaEl.textContent = delta;
 }
 
-function populateFilterDropdowns(data) {
+async function populateFilterDropdowns(data) {
   const userSelect = document.getElementById('ov-filter-user');
   const callSelect = document.getElementById('ov-filter-call');
 
-  // Extract unique users and calls from heatmap/stats
-  const users = [...new Set(data.heatmap.map(h => h.username))].sort();
+  if (!userSelect || !callSelect) return;
+  
+  const currentUser = userSelect.value;
+  const currentCall = callSelect.value;
+
+  // 1. Clear existing options (except "All")
+  while (userSelect.options.length > 1) userSelect.remove(1);
+  while (callSelect.options.length > 1) callSelect.remove(1);
+
+  // 2. Fetch ALL users from DB for comprehensive filtering (Admin/Dev)
+  const userRes = await apiGetUsers();
+  const users = userRes.ok ? userRes.data.map(u => u.username).sort() : [];
+  
+  // 3. Extract unique calls from recent log data
   const calls = [...new Set(data.heatmap.map(h => h.call_type))].sort();
 
-  users.forEach(u => {
-    const opt = new Option(u, u);
-    userSelect?.add(opt);
-  });
-  calls.forEach(c => {
-    const opt = new Option(c, c);
-    callSelect?.add(opt);
-  });
+  users.forEach(u => userSelect.add(new Option(u, u)));
+  calls.forEach(c => callSelect.add(new Option(c, c)));
+
+  // 4. Restore selection
+  userSelect.value = currentUser;
+  callSelect.value = currentCall;
 }
 
 function updateOverviewRecentLogs(logs) {
@@ -700,5 +708,80 @@ window.addEventListener('DOMContentLoaded', () => {
     startClock();
     goPage('overview');
     initDashboard();
+    
+    // Initial Explorer load
+    setTimeout(renderExplorer, 1000);
   }
 });
+
+// ── File Explorer Logic ──────────────────────────────────────────────────────
+
+async function renderExplorer() {
+  const list = document.getElementById('explorer-list');
+  if (!list) return;
+
+  const res = await apiGetExplorer();
+  if (!res.ok) {
+    list.innerHTML = `<div class="explorer-empty">Access denied or sandbox unreachable.</div>`;
+    return;
+  }
+
+  const entries = res.data.entries || [];
+  if (entries.length === 0) {
+    list.innerHTML = `<div class="explorer-empty">Sandbox is empty.<br>Use "Write File" or "Import" to add files.</div>`;
+    return;
+  }
+
+  list.innerHTML = entries.map(e => `
+    <div class="explorer-item" onclick="selectExplorerFile('${e.name}', '${e.type}')">
+      <div class="explorer-item-icon">${e.type === 'dir' ? '📁' : '📄'}</div>
+      <div class="explorer-item-info">
+        <div class="explorer-item-name">${e.name}</div>
+        <div class="explorer-item-meta">${e.type.toUpperCase()} ${e.size ? `· ${formatBytes(e.size)}` : ''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectExplorerFile(name, type) {
+  const pathInput = document.getElementById('input-filepath');
+  if (pathInput) {
+    pathInput.value = name;
+    updatePreview();
+    showToast('info', `Selected: ${name}`);
+  }
+}
+
+async function importExternalFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  if (!file.name.endsWith('.txt')) {
+    showToast('danger', 'Only .txt files are allowed for import.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const content = e.target.result;
+    showToast('info', `Importing ${file.name}…`);
+    
+    const res = await apiWriteFile(file.name, content);
+    if (res.ok) {
+      showToast('success', `Successfully imported ${file.name}`);
+      renderExplorer();
+    } else {
+      showToast('danger', `Import failed: ${res.data?.reason || 'Access Denied'}`);
+    }
+    input.value = ''; // Reset
+  };
+  reader.readAsText(file);
+}
+
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
