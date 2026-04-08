@@ -1,6 +1,6 @@
 """
 auth_rbac/auth_controller.py
-Tejas — User registration, login, logout, and user info.
+User registration, login, logout, and user info.
 """
 
 from database.db import get_connection
