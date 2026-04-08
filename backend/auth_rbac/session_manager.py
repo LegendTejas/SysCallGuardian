@@ -1,6 +1,6 @@
 """
 auth_rbac/session_manager.py
-Tejas — JWT generation, verification, and DB session lifecycle.
+JWT generation, verification, and DB session lifecycle.
 """
 
 import jwt
