@@ -1,6 +1,6 @@
 """
 tests/test_syscalls.py
-Vanshika — pytest test suite for Syscall Layer.
+pytest test suite for Syscall Layer.
 
 Coverage:
   - Input validation (path traversal, null bytes, blocked paths, bad commands)

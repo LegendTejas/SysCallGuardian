@@ -1,6 +1,6 @@
 """
 tests/test_policy.py
-Tejas — pytest test suite for RBAC and Policy Engine.
+pytest test suite for RBAC and Policy Engine.
 
 Coverage:
   - Role permission map (can_perform, has_minimum_role)

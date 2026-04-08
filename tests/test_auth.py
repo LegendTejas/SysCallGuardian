@@ -1,6 +1,6 @@
 """
 tests/test_auth.py
-Tejas — pytest test suite for Authentication System.
+pytest test suite for Authentication System.
 
 Coverage:
   - User registration (success, duplicate, weak password, invalid role)

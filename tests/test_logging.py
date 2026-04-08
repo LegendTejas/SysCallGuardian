@@ -1,6 +1,6 @@
 """
 tests/test_logging.py
-Vanshika — pytest test suite for Logging & Threat Detection.
+pytest test suite for Logging & Threat Detection.
 
 Coverage:
   - audit_logger: write log, verify hash stored, pagination, filters
