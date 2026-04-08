@@ -1,7 +1,7 @@
 
 """
 routes/log_routes.py
-Vanshika — Flask routes for logs, integrity verification, and threat data.
+Flask routes for logs, integrity verification, and threat data.
 """
 
 from flask import Blueprint, request, jsonify, g
