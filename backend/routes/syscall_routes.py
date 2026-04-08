@@ -1,6 +1,6 @@
 """
 routes/syscall_routes.py
-Vanshika — Flask routes for all syscall endpoints.
+Flask routes for all syscall endpoints.
 """
 
 from flask import Blueprint, request, jsonify, g
