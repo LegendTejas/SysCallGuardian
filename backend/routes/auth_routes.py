@@ -1,6 +1,6 @@
 """
 routes/auth_routes.py
-Tejas — Flask routes for auth, user info, and policy management.
+Flask routes for auth, user info, and policy management.
 """
 
 from flask import Blueprint, request, jsonify, g
