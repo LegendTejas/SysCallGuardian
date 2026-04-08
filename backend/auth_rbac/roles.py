@@ -1,6 +1,6 @@
 """
 auth_rbac/roles.py
-Tejas — Role definitions, permission map, and access decision logic.
+Role definitions, permission map, and access decision logic.
 """
 
 import json
