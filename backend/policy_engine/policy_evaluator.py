@@ -1,6 +1,6 @@
 """
 policy_engine/policy_evaluator.py
-Tejas — Rule evaluation engine. Core of the policy decision system.
+Rule evaluation engine. Core of the policy decision system.
 
 Policy Rule Format (stored as JSON in DB):
 {
