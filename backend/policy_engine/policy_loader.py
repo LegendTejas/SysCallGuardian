@@ -1,6 +1,6 @@
 """
 policy_engine/policy_loader.py
-Tejas — Load policies from DB and sync from JSON/YAML files.
+Load policies from DB and sync from JSON/YAML files.
 """
 
 import json
