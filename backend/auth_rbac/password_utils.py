@@ -1,6 +1,6 @@
 """
 auth_rbac/password_utils.py
-Tejas — Password hashing and verification using bcrypt.
+Password hashing and verification using bcrypt.
 """
 
 import bcrypt
