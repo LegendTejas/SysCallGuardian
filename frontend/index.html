@@ -716,12 +716,22 @@
     
     <div class="fp-modal-header">
       <h2 class="fp-modal-title">Account Recovery</h2>
-      <p class="fp-modal-desc">Enter your username or email address to continue.</p>
+      <p class="fp-modal-desc" id="fp-modal-desc">Enter your username or email address to continue.</p>
     </div>
 
     <div id="fp-step-1">
-      <div class="fp-form-group">
-        <input type="text" id="fp-identity" class="fp-input" placeholder="Username or Email" autocomplete="off" />
+      <div id="fp-identity-container">
+        <div class="fp-form-group">
+          <input type="text" id="fp-identity" class="fp-input" placeholder="Username or Email" autocomplete="off" />
+        </div>
+      </div>
+      <div id="fp-dual-fields" style="display: none;">
+        <div class="fp-form-group" style="margin-bottom: 12px;">
+          <input type="text" id="fp-recovery-username" class="fp-input" placeholder="Username" autocomplete="off" />
+        </div>
+        <div class="fp-form-group">
+          <input type="email" id="fp-recovery-email" class="fp-input" placeholder="Email Address" autocomplete="off" />
+        </div>
       </div>
       <button type="button" class="fp-btn" onclick="handleForgotPwdIdentity()">Continue →</button>
     </div>
@@ -731,6 +741,11 @@
     </div>
 
     <div id="fp-step-3" style="display: none;">
+      <div id="fp-reset-identity-summary" style="margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid var(--border);">
+        <div style="font-size: 10px; color: var(--text3); text-transform: uppercase; margin-bottom: 4px;">Recovering Account</div>
+        <div id="fp-reset-username-display" style="font-weight: 600; font-size: 14px; color: var(--text);"></div>
+        <div id="fp-reset-email-display" style="font-size: 12px; color: var(--text2);"></div>
+      </div>
       <div class="fp-form-group">
         <label style="font-size: 11px; color: var(--text3); font-family: var(--mono); text-transform: uppercase;">Verification Code</label>
         <input type="text" id="fp-otp" class="fp-input" placeholder="000000" autocomplete="off" style="letter-spacing: 4px; font-family: var(--mono); text-align: center; font-size: 18px;" />
@@ -756,8 +771,8 @@
           <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
           <polyline points="22 4 12 14.01 9 11.01"></polyline>
         </svg>
-        <p style="font-weight: 500; font-size: 14px; margin-bottom: 8px;">Admin Recovery Initiated</p>
-        <p style="text-align: left; font-size: 13px;">A password reset was requested for the admin account: Tejax.</p>
+        <p id="fp-result-title" style="font-weight: 500; font-size: 14px; margin-bottom: 8px;">Admin Recovery Initiated</p>
+        <p style="text-align: left; font-size: 13px;">A password reset was requested for the admin account: <span id="fp-result-username" style="font-weight: 600;"></span>.</p>
         <p style="text-align: left; font-size: 13px; margin-top: 8px;">Our security team has been notified. If this is legitimate, please await authorization. If you did not request this, action is required immediately.</p>
       </div>
     </div>

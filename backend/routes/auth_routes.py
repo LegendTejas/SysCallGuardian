@@ -96,11 +96,10 @@ def api_recover_info():
 @auth_bp.route("/api/auth/forgot-password", methods=["POST"])
 def api_forgot_password():
     data = request.get_json(silent=True) or {}
-    identity = data.get("identity", "").strip()
-    # The email they entered or the identity itself if it's an email format
+    role = data.get("role", "guest").lower()
     
-    if not identity:
-        return jsonify({"error": "Identity required"}), 400
+    # Generic response to prevent enumeration
+    generic_response = (jsonify({"message": "If an account matching those details exists, recovery instructions have been sent."}), 200)
 
     from database.db import get_connection
     from auth_rbac.notification_service import send_admin_alert, send_developer_secure_link, send_guest_otp
@@ -109,11 +108,39 @@ def api_forgot_password():
 
     conn = get_connection()
     try:
+        if role == "admin" or role == "guest":
+            username = data.get("username", "").strip()
+            email = data.get("email", "").strip()
+            if not username or not email:
+                return jsonify({"error": "Username and email are required."}), 400
+            
+            # Verify user exists for Guest (Admin alert is always sent per previous requirement)
+            if role == "guest":
+                row = conn.execute("SELECT id FROM users WHERE LOWER(username) = ? AND role = 'guest'", 
+                                   (username.lower(),)).fetchone()
+                if not row:
+                    return jsonify({"error": f"No Guest account found with username '{username}'."}), 404
+                
+                target_email = email.lower() # Use provided email regardless of DB
+                otp = f"{random.randint(100000, 999999)}"
+                conn.execute(
+                    "INSERT INTO otps (email, otp_code, expires_at) VALUES (?, ?, datetime('now', '+15 minutes'))",
+                    (target_email, otp)
+                )
+                conn.commit()
+                send_guest_otp(target_email, otp)
+                return generic_response
+            else:
+                # Admin alert
+                send_admin_alert("testingacctejax@gmail.com", username, email)
+                return generic_response
+
+        identity = data.get("identity", "").strip()
+        if not identity:
+            return jsonify({"error": "Identity required"}), 400
+
         row = conn.execute("SELECT id, username, email, role FROM users WHERE LOWER(username) = ? OR LOWER(email) = ?", 
                            (identity.lower(), identity.lower())).fetchone()
-        
-        # Always return generic success to prevent enumeration
-        generic_response = (jsonify({"message": "If an account matching those details exists, recovery instructions have been sent."}), 200)
         
         if not row:
             # If they typed an email address that doesn't exist in the DB,
@@ -133,19 +160,14 @@ def api_forgot_password():
         db_email = row["email"]
         username = row["username"]
         
-        if role == "admin":
-            if db_email != "testingacctejax@gmail.com":
-                return generic_response
-            send_admin_alert(db_email, username)
-            
-        elif role == "developer":
+        if role == "developer":
             if db_email != "cvanshika995@gmail.com":
                 return generic_response
             token = str(uuid.uuid4())
             send_developer_secure_link(db_email, token)
             
         else:
-            # Guest logic fallback for registered user
+            # Guest logic
             target_email = db_email
             if not target_email and "@" in identity:
                 target_email = identity.lower()
@@ -171,6 +193,7 @@ def api_reset_password():
     identity = data.get("identity", "").strip().lower()
     otp = data.get("otp", "").strip()
     new_password = data.get("new_password", "")
+    recovery_email = data.get("email", "").strip().lower()
     
     if not identity or not otp or not new_password:
         return jsonify({"error": "Missing parameters."}), 400
@@ -184,12 +207,13 @@ def api_reset_password():
     conn = get_connection()
     try:
         # Check OTP validity
-        target_email = identity
+        target_email = recovery_email or identity
         
-        # If username was used, we need their actual DB email
-        user_row = conn.execute("SELECT email FROM users WHERE LOWER(username) = ?", (identity,)).fetchone()
-        if user_row and user_row["email"]:
-            target_email = user_row["email"]
+        # If no explicit recovery email, and identity is a username, try to find their DB email
+        if not recovery_email:
+            user_row = conn.execute("SELECT email FROM users WHERE LOWER(username) = ?", (identity,)).fetchone()
+            if user_row and user_row["email"]:
+                target_email = user_row["email"]
             
         otp_row = conn.execute(
             "SELECT id FROM otps WHERE LOWER(email) = ? AND otp_code = ? AND expires_at > datetime('now') ORDER BY created_at DESC LIMIT 1",
@@ -202,11 +226,20 @@ def api_reset_password():
         # Delete used OTP
         conn.execute("DELETE FROM otps WHERE id = ?", (otp_row["id"],))
         
-        # Update user's password if they exist
-        conn.execute(
-            "UPDATE users SET password_hash = ? WHERE LOWER(username) = ? OR LOWER(email) = ?",
-            (hash_password(new_password), identity, target_email)
-        )
+        # Update user's password
+        # We use a more specific WHERE clause to ensure we only update the intended user account
+        if recovery_email and identity:
+            # If both are provided (Guest/Admin flow), we match by username
+            conn.execute(
+                "UPDATE users SET password_hash = ? WHERE LOWER(username) = ?",
+                (hash_password(new_password), identity)
+            )
+        else:
+            # Fallback for Developer flow (identity could be username or email)
+            conn.execute(
+                "UPDATE users SET password_hash = ? WHERE LOWER(username) = ? OR LOWER(email) = ?",
+                (hash_password(new_password), identity, target_email)
+            )
         conn.commit()
         return jsonify({"message": "Password successfully reset."}), 200
     finally:

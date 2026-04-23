@@ -103,20 +103,41 @@ async function doLogout() {
 
 /* ══ FORGOT PASSWORD UI LOGIC ══ */
 function openForgotPwdModal() {
-  document.getElementById('fp-modal-overlay').classList.add('open');
+  const overlay = document.getElementById('fp-modal-overlay');
+  overlay.classList.add('open');
   document.getElementById('fp-step-1').style.display = 'block';
   document.getElementById('fp-step-2').style.display = 'none';
   document.getElementById('fp-step-3').style.display = 'none';
-  const idInput = document.getElementById('fp-identity');
-  idInput.value = '';
+  document.getElementById('fp-step-3-neutral').style.display = 'none';
   
-  // Prevent "Enter" from refreshing page
-  idInput.onkeydown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleForgotPwdIdentity();
-    }
-  };
+  const idContainer = document.getElementById('fp-identity-container');
+  const dualFields = document.getElementById('fp-dual-fields');
+  const modalDesc = document.getElementById('fp-modal-desc');
+  
+  // Reset fields
+  document.getElementById('fp-identity').value = '';
+  document.getElementById('fp-recovery-username').value = '';
+  document.getElementById('fp-recovery-email').value = '';
+  document.getElementById('fp-otp').value = '';
+  document.getElementById('fp-new-pwd').value = '';
+  document.getElementById('fp-new-pwd-confirm').value = '';
+  document.getElementById('fp-reset-error').style.display = 'none';
+
+  if (selectedRole === 'Admin' || selectedRole === 'Guest') {
+    idContainer.style.display = 'none';
+    dualFields.style.display = 'block';
+    modalDesc.textContent = `Enter your ${selectedRole.toLowerCase()} username and registered email address.`;
+  } else {
+    // Developer or others
+    idContainer.style.display = 'block';
+    dualFields.style.display = 'none';
+    modalDesc.textContent = 'Enter your username or email address to continue.';
+  }
+
+  const enterFn = (e) => { if (e.key === 'Enter') { e.preventDefault(); handleForgotPwdIdentity(); } };
+  document.getElementById('fp-identity').onkeydown = enterFn;
+  document.getElementById('fp-recovery-username').onkeydown = enterFn;
+  document.getElementById('fp-recovery-email').onkeydown = enterFn;
 }
 
 function closeForgotPwdModal(e) {
@@ -125,30 +146,22 @@ function closeForgotPwdModal(e) {
 }
 
 async function handleForgotPwdIdentity() {
-  const identity = document.getElementById('fp-identity').value.trim();
-  if (!identity) return;
-
-  const btn = document.querySelector('#fp-step-1 .fp-btn');
-  const errContainer = document.querySelector('#fp-step-1');
+  const role = selectedRole || 'Guest';
+  window._tempFpRole = role.toLowerCase();
   
-  if (selectedRole === 'Guest' && !identity.includes('@')) {
-      const orig = btn.textContent;
-      btn.textContent = "Error: Must use Email address";
-      btn.disabled = true;
-      setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+  if (role === 'Admin' || role === 'Guest') {
+    const u = document.getElementById('fp-recovery-username').value.trim();
+    const e = document.getElementById('fp-recovery-email').value.trim();
+    if (!u || !e) return;
+    if (!e.includes('@')) {
+      showToast('error', 'Please enter a valid email address.');
       return;
+    }
+  } else {
+    const identity = document.getElementById('fp-identity').value.trim();
+    if (!identity) return;
   }
   
-  btn.textContent = "Checking...";
-  btn.disabled = true;
-
-  // Enforce strict UI layout based on selected tab (per user request, no dynamic backend override)
-  const safeRole = selectedRole || 'Guest';
-  window._tempFpRole = safeRole.toLowerCase();
-
-  btn.textContent = "Continue →";
-  btn.disabled = false;
-
   const contentDiv = document.getElementById('fp-dynamic-content');
 
   if (window._tempFpRole === 'admin') {
@@ -180,7 +193,7 @@ async function handleForgotPwdIdentity() {
 async function submitRecovery(e) {
   if (e) e.preventDefault();
   
-  const identity = document.getElementById('fp-identity').value.trim();
+  const role = window._tempFpRole;
   const btn = document.querySelector('#fp-step-2 .fp-btn');
   if (btn) {
       btn.textContent = "Sending...";
@@ -188,14 +201,45 @@ async function submitRecovery(e) {
   }
 
   try {
+    let payload = { role: role };
+    if (role === 'admin' || role === 'guest') {
+      payload.username = document.getElementById('fp-recovery-username').value.trim();
+      payload.email = document.getElementById('fp-recovery-email').value.trim();
+    } else {
+      payload.identity = document.getElementById('fp-identity').value.trim();
+    }
+
     // Final dispatch
-    await api('POST', '/api/auth/forgot-password', { identity }, false);
+    const res = await api('POST', '/api/auth/forgot-password', payload, false);
+    
+    if (!res.ok) {
+        showToast('error', res.data?.error || 'Account identification failed.');
+        if (btn) btn.disabled = false;
+        if (btn) btn.textContent = role === 'admin' ? "Request Admin Reset" : (role === 'guest' ? "Send OTP" : "Continue →");
+        return;
+    }
 
     document.getElementById('fp-step-2').style.display = 'none';
 
-    if (window._tempFpRole === 'admin' || window._tempFpRole === 'developer') {
+    if (role === 'admin' || role === 'developer') {
+        const resultTitle = document.getElementById('fp-result-title');
+        const neutralState = document.querySelector('#fp-step-3-neutral .fp-neutral-state');
+        
+        if (role === 'admin') {
+            const username = document.getElementById('fp-recovery-username').value.trim() || 'Admin';
+            resultTitle.textContent = 'Admin Recovery Initiated';
+            // Update the message paragraph directly
+            neutralState.querySelectorAll('p')[1].innerHTML = `A password reset was requested for the admin account: <span id="fp-result-username" style="font-weight: 600;">${username}</span>.`;
+        } else {
+            const identity = document.getElementById('fp-identity').value.trim();
+            resultTitle.textContent = 'Developer Reset Sent';
+            neutralState.querySelectorAll('p')[1].innerHTML = `A password reset link has been sent for the developer account: <span id="fp-result-username" style="font-weight: 600;">${identity}</span>.`;
+        }
         document.getElementById('fp-step-3-neutral').style.display = 'block';
     } else {
+        // Guest step 3
+        document.getElementById('fp-reset-username-display').textContent = document.getElementById('fp-recovery-username').value.trim();
+        document.getElementById('fp-reset-email-display').textContent = document.getElementById('fp-recovery-email').value.trim();
         document.getElementById('fp-step-3').style.display = 'block';
     }
   } catch (err) {
@@ -238,8 +282,16 @@ async function saveNewPassword() {
   btn.textContent = "Resetting...";
   btn.disabled = true;
   
+  const role = window._tempFpRole;
+  let identity = document.getElementById('fp-identity').value.trim();
+  if (role === 'guest' || role === 'admin') {
+      // Use username for reset identity to ensure correct user mapping
+      identity = document.getElementById('fp-recovery-username').value.trim();
+  }
+  
   const res = await api('POST', '/api/auth/reset-password', {
-      identity: document.getElementById('fp-identity').value.trim(),
+      identity: identity,
+      email: document.getElementById('fp-recovery-email').value.trim(),
       otp: otp,
       new_password: pwd1
   }, false);
@@ -252,7 +304,14 @@ async function saveNewPassword() {
       err.style.display = 'block';
   } else {
       closeForgotPwdModal();
-      document.getElementById('username').value = document.getElementById('fp-identity').value.trim();
+      
+      const role = window._tempFpRole;
+      let loginUsername = document.getElementById('fp-identity').value.trim();
+      if (role === 'guest' || role === 'admin') {
+          loginUsername = document.getElementById('fp-recovery-username').value.trim();
+      }
+      
+      document.getElementById('username').value = loginUsername;
       const loginErr = document.getElementById('error-msg');
       loginErr.style.display = 'block';
       loginErr.style.color = 'var(--accent)';

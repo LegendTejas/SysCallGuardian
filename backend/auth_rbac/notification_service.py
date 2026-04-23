@@ -72,13 +72,13 @@ def send_developer_secure_link(to_email: str, reset_token: str):
     """
     return send_email(to_email, subject, body)
 
-def send_admin_alert(to_email: str, admin_username: str):
+def send_admin_alert(to_email: str, admin_username: str, admin_email: str):
     subject = "[URGENT] SysCallGuardian Admin Reset Requested"
     body = f"""
     <html>
       <body style="font-family: sans-serif; color: #1A1916;">
         <h2 style="color: #C0392B;">Admin Recovery Initiated</h2>
-        <p>A password reset was requested for the admin account: <b>{admin_username}</b>.</p>
+        <p>A password reset was requested for the admin account: <b>{admin_username}</b> (Email: {admin_email}).</p>
         <p>Our security team has been notified. If this is legitimate, please await authorization. If you did not request this, action is required immediately.</p>
       </body>
     </html>
